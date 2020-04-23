@@ -23,6 +23,8 @@
 #endif
 
 
+namespace specjson {
+
 class SpecificException : public std::exception {
 private:
     const char* reason;
@@ -775,5 +777,7 @@ void Write(Sink& S, const std::vector<T>& Value, std::vector<char>& Buffer) {
     auto e = Value.cend();
     Write<Sink,typename std::vector<T>::const_iterator>(S, b, e, Buffer);
 }
+
+} // namespace
 
 #endif

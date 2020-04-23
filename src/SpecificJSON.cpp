@@ -8,7 +8,7 @@
 #include "SpecificJSON.hpp"
 #include "testdoc.h"
 
-
+namespace specjson {
 // Exceptions thrown by templated code.
 SpecificException NotFinished("Item not finished.");
 SpecificException InvalidArrayStart("Expected '['");
@@ -19,7 +19,9 @@ SpecificException InvalidKey("Object, unexpected key.");
 SpecificException InvalidValueSeparator("Object, expected ':'");
 SpecificException RequiredKeyNotGiven("Object, required key not given.");
 SpecificException NumberNotFinite("Number not finite.");
+}
 
+using namespace specjson;
 
 ParserPool::~ParserPool() { }
 

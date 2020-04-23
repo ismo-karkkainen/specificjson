@@ -42,30 +42,30 @@ end
 $simples = {
   'string' => {
     :cont => false,
-    :fmt => 'ParseString',
-    :include => 'JSONParsers.hpp' },
+    :fmt => 'specjson::ParseString',
+    :include => 'SpecificJSON.hpp' },
   'float' => {
     :cont => false,
-    :fmt => 'ParseFloat',
-    :include => 'JSONParsers.hpp' },
+    :fmt => 'specjson::ParseFloat',
+    :include => 'SpecificJSON.hpp' },
   'integer' => {
     :cont => false,
-    :fmt => 'ParseInt',
-    :include => 'JSONParsers.hpp' },
+    :fmt => 'specjson::ParseInt',
+    :include => 'SpecificJSON.hpp' },
   'array' => {
     :cont => true,
-    :fmt => 'ParseArray<%s>',
-    :include => 'JSONParsers.hpp' },
+    :fmt => 'specjson::ParseArray<%s>',
+    :include => 'SpecificJSON.hpp' },
   'object' => {
     :cont => true,
-    :fmt => 'ParseObject<%s,%s>',
-    :include => 'JSONParsers.hpp' }
+    :fmt => 'specjson::ParseObject<%s,%s>',
+    :include => 'SpecificJSON.hpp' }
 }
 $containers = {
   'array' => {
     :cont => true,
-    :fmt => 'ParseContainerArray<%s>',
-    :include => 'JSONParsers.hpp' }
+    :fmt => 'specjson::ParseContainerArray<%s>',
+    :include => 'SpecificJSON.hpp' }
 }
 
 def check_input(format)
@@ -118,7 +118,7 @@ def check_output(format)
   format = [ format ] unless format.is_a? Array
   item = format.shift
   if item.is_a? String
-    info = [ { :include => 'JSONWriters.hpp' } ]
+    info = [ { :include => 'SpecificJSON.hpp' } ]
     reqs = []
     unless format.empty?
       contained = check_output(format)
@@ -392,7 +392,7 @@ parsed.each_pair do |basename, spec|
   spec[:in][:includes] = $includes.uniq
   $types = {}
   $lines = []
-  $includes = [ 'JSONWriters.hpp' ]
+  $includes = [ 'SpecificJSON.hpp' ]
   define_output_functions(spec[:out])
   ordered = $types.values
   ordered.sort! do |a, b|
@@ -439,9 +439,15 @@ parsed.each_pair do |basename, spec|
 #define IOGEN_#{basename.upcase}_IOHPP
 )
   h.puts includes(spec[:in], spec[:out])
-  h.puts ''
+  h.puts %Q(
+namespace specjson {
+)
   h.puts spec[:in][:lines].join("\n") unless spec[:in][:lines].empty?
   h.puts spec[:out][:lines].join("\n") unless spec[:out][:lines].empty?
-  h.puts '#endif'
+  h.puts %Q(
+}
+
+#endif
+)
   h.close
 end
