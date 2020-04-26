@@ -25,7 +25,7 @@ using namespace specjson;
 
 ParserPool::~ParserPool() { }
 
-const char* SimpleValueParser::setFinished(const char* Endptr, ParserPool& Pool)
+const char* ValueParser::setFinished(const char* Endptr, ParserPool& Pool)
 {
     finished = Endptr != nullptr;
     if (finished && !Pool.buffer.empty())
@@ -33,19 +33,19 @@ const char* SimpleValueParser::setFinished(const char* Endptr, ParserPool& Pool)
     return Endptr;
 }
 
-const char* SimpleValueParser::setFinished(const char* Endptr) {
+const char* ValueParser::setFinished(const char* Endptr) {
     finished = Endptr != nullptr;
     return Endptr;
 }
 
-const char* SimpleValueParser::skipWhitespace(const char* Begin, const char* End)
+const char* ValueParser::skipWhitespace(const char* Begin, const char* End)
 {
     while (Begin != End && isWhitespace(*Begin))
         ++Begin;
     return (Begin != End) ? Begin : nullptr;
 }
 
-SimpleValueParser::~SimpleValueParser() { }
+ValueParser::~ValueParser() { }
 
 static SpecificException InvalidFloat("Invalid float.");
 
@@ -820,10 +820,10 @@ TEST_CASE("Integer") {
 
 TEST_CASE("Float array") {
     ParserPool pp;
-    ParseArray<ParseFloat>::Type out;
+    ParseArray<std::vector<ParseFloat::Type>,ParseFloat>::Type out;
     SUBCASE("[]") {
         pp.buffer.resize(0);
-        ParseArray<ParseFloat> parser;
+        ParseArray<std::vector<ParseFloat::Type>,ParseFloat> parser;
         std::string s("[]");
         REQUIRE(parser.Scan(s.c_str(), s.c_str() + s.size(), pp) == s.c_str() + s.size());
         parser.Swap(out);
@@ -832,7 +832,7 @@ TEST_CASE("Float array") {
     SUBCASE("[ ]") {
         out.resize(0);
         pp.buffer.resize(0);
-        ParseArray<ParseFloat> parser;
+        ParseArray<std::vector<ParseFloat::Type>,ParseFloat> parser;
         std::string s("[ ]");
         REQUIRE(parser.Scan(s.c_str(), s.c_str() + s.size(), pp) == s.c_str() + s.size());
         parser.Swap(out);
@@ -841,7 +841,7 @@ TEST_CASE("Float array") {
     SUBCASE("[\x9 1\xA\xD]") {
         out.resize(0);
         pp.buffer.resize(0);
-        ParseArray<ParseFloat> parser;
+        ParseArray<std::vector<ParseFloat::Type>,ParseFloat> parser;
         std::string s("[ 1 ]");
         REQUIRE(parser.Scan(s.c_str(), s.c_str() + s.size(), pp) == s.c_str() + s.size());
         parser.Swap(out);
@@ -851,7 +851,7 @@ TEST_CASE("Float array") {
     SUBCASE("[ 1 ] again") {
         out.resize(0);
         pp.buffer.resize(0);
-        ParseArray<ParseFloat> parser;
+        ParseArray<std::vector<ParseFloat::Type>,ParseFloat> parser;
         std::string s("[ 1 ]");
         REQUIRE(parser.Scan(s.c_str(), s.c_str() + s.size(), pp) == s.c_str() + s.size());
         parser.Swap(out);
@@ -866,7 +866,7 @@ TEST_CASE("Float array") {
     SUBCASE("[1,2]") {
         out.resize(0);
         pp.buffer.resize(0);
-        ParseArray<ParseFloat> parser;
+        ParseArray<std::vector<ParseFloat::Type>,ParseFloat> parser;
         std::string s("[1,2]");
         REQUIRE(parser.Scan(s.c_str(), s.c_str() + s.size(), pp) == s.c_str() + s.size());
         parser.Swap(out);
@@ -877,7 +877,7 @@ TEST_CASE("Float array") {
     SUBCASE("[|]") {
         out.resize(0);
         pp.buffer.resize(0);
-        ParseArray<ParseFloat> parser;
+        ParseArray<std::vector<ParseFloat::Type>,ParseFloat> parser;
         std::string s0("[");
         std::string s("]");
         REQUIRE(parser.Scan(s0.c_str(), s0.c_str() + s0.size(), pp) == nullptr);
@@ -888,7 +888,7 @@ TEST_CASE("Float array") {
     SUBCASE("[1,|2]") {
         out.resize(0);
         pp.buffer.resize(0);
-        ParseArray<ParseFloat> parser;
+        ParseArray<std::vector<ParseFloat::Type>,ParseFloat> parser;
         std::string s0("[1,");
         std::string s("2]");
         REQUIRE(parser.Scan(s0.c_str(), s0.c_str() + s0.size(), pp) == nullptr);
@@ -901,7 +901,7 @@ TEST_CASE("Float array") {
     SUBCASE("[1|,2]") {
         out.resize(0);
         pp.buffer.resize(0);
-        ParseArray<ParseFloat> parser;
+        ParseArray<std::vector<ParseFloat::Type>,ParseFloat> parser;
         std::string s0("[1");
         std::string s(",2]");
         REQUIRE(parser.Scan(s0.c_str(), s0.c_str() + s0.size(), pp) == nullptr);
@@ -914,7 +914,7 @@ TEST_CASE("Float array") {
     SUBCASE("[1.|0,2.0]") {
         out.resize(0);
         pp.buffer.resize(0);
-        ParseArray<ParseFloat> parser;
+        ParseArray<std::vector<ParseFloat::Type>,ParseFloat> parser;
         std::string s0("[1.");
         std::string s("0,2.0]");
         REQUIRE(parser.Scan(s0.c_str(), s0.c_str() + s0.size(), pp) == nullptr);
@@ -927,7 +927,7 @@ TEST_CASE("Float array") {
     SUBCASE("[1,2|.0]") {
         out.resize(0);
         pp.buffer.resize(0);
-        ParseArray<ParseFloat> parser;
+        ParseArray<std::vector<ParseFloat::Type>,ParseFloat> parser;
         std::string s0("[1,2");
         std::string s(".0]");
         REQUIRE(parser.Scan(s0.c_str(), s0.c_str() + s0.size(), pp) == nullptr);
@@ -940,7 +940,7 @@ TEST_CASE("Float array") {
     SUBCASE("[1,2|.0,3]") {
         out.resize(0);
         pp.buffer.resize(0);
-        ParseArray<ParseFloat> parser;
+        ParseArray<std::vector<ParseFloat::Type>,ParseFloat> parser;
         std::string s0("[1,2");
         std::string s(".0,3]");
         REQUIRE(parser.Scan(s0.c_str(), s0.c_str() + s0.size(), pp) == nullptr);
@@ -955,44 +955,44 @@ TEST_CASE("Float array") {
 
 TEST_CASE("Float array failures") {
     ParserPool pp;
-    ParseArray<ParseFloat>::Type out;
+    ParseArray<std::vector<ParseFloat::Type>,ParseFloat>::Type out;
     SUBCASE("invalid") {
-        ParseArray<ParseFloat> parser;
+        ParseArray<std::vector<ParseFloat::Type>,ParseFloat> parser;
         std::string s("invalid");
         REQUIRE_THROWS_AS(parser.Scan(s.c_str(), s.c_str() + s.size(), pp), SpecificException);
     }
     SUBCASE("]") {
-        ParseArray<ParseFloat> parser;
+        ParseArray<std::vector<ParseFloat::Type>,ParseFloat> parser;
         std::string s("]");
         REQUIRE_THROWS_AS(parser.Scan(s.c_str(), s.c_str() + s.size(), pp), SpecificException);
     }
     SUBCASE("[,") {
-        ParseArray<ParseFloat> parser;
+        ParseArray<std::vector<ParseFloat::Type>,ParseFloat> parser;
         std::string s("[,");
         REQUIRE_THROWS_AS(parser.Scan(s.c_str(), s.c_str() + s.size(), pp), SpecificException);
     }
     SUBCASE("[ ,") {
-        ParseArray<ParseFloat> parser;
+        ParseArray<std::vector<ParseFloat::Type>,ParseFloat> parser;
         std::string s("[ ,");
         REQUIRE_THROWS_AS(parser.Scan(s.c_str(), s.c_str() + s.size(), pp), SpecificException);
     }
     SUBCASE("[1,,") {
-        ParseArray<ParseFloat> parser;
+        ParseArray<std::vector<ParseFloat::Type>,ParseFloat> parser;
         std::string s("[1,,");
         REQUIRE_THROWS_AS(parser.Scan(s.c_str(), s.c_str() + s.size(), pp), SpecificException);
     }
     SUBCASE("[1,]") {
-        ParseArray<ParseFloat> parser;
+        ParseArray<std::vector<ParseFloat::Type>,ParseFloat> parser;
         std::string s("[1,]");
         REQUIRE_THROWS_AS(parser.Scan(s.c_str(), s.c_str() + s.size(), pp), SpecificException);
     }
     SUBCASE("[1 , ]") {
-        ParseArray<ParseFloat> parser;
+        ParseArray<std::vector<ParseFloat::Type>,ParseFloat> parser;
         std::string s("[1 , ]");
         REQUIRE_THROWS_AS(parser.Scan(s.c_str(), s.c_str() + s.size(), pp), SpecificException);
     }
     SUBCASE("[1") {
-        ParseArray<ParseFloat> parser;
+        ParseArray<std::vector<ParseFloat::Type>,ParseFloat> parser;
         std::string s("[1");
         REQUIRE(parser.Scan(s.c_str(), s.c_str() + s.size(), pp) == nullptr);
         REQUIRE_THROWS_AS(parser.Swap(out), SpecificException);
@@ -1001,10 +1001,10 @@ TEST_CASE("Float array failures") {
 
 TEST_CASE("Float array array") {
     ParserPool pp;
-    ParseContainerArray<ParseArray<ParseFloat>>::Type out;
+    ParseContainerArray<std::vector<ParseArray<std::vector<ParseFloat::Type>,ParseFloat>::Type>,ParseArray<std::vector<ParseFloat::Type>,ParseFloat>>::Type out;
     SUBCASE("[[]]") {
         pp.buffer.resize(0);
-        ParseContainerArray<ParseArray<ParseFloat>> parser;
+        ParseContainerArray<std::vector<ParseArray<std::vector<ParseFloat::Type>,ParseFloat>::Type>,ParseArray<std::vector<ParseFloat::Type>,ParseFloat>> parser;
         std::string s("[[]]");
         REQUIRE(parser.Scan(s.c_str(), s.c_str() + s.size(), pp) == s.c_str() + s.size());
         parser.Swap(out);
@@ -1013,7 +1013,7 @@ TEST_CASE("Float array array") {
     }
     SUBCASE("[[1]]") {
         pp.buffer.resize(0);
-        ParseContainerArray<ParseArray<ParseFloat>> parser;
+        ParseContainerArray<std::vector<ParseArray<std::vector<ParseFloat::Type>,ParseFloat>::Type>,ParseArray<std::vector<ParseFloat::Type>,ParseFloat>> parser;
         std::string s("[[1]]");
         REQUIRE(parser.Scan(s.c_str(), s.c_str() + s.size(), pp) == s.c_str() + s.size());
         parser.Swap(out);
@@ -1023,7 +1023,7 @@ TEST_CASE("Float array array") {
     }
     SUBCASE("[[1],[2]]") {
         pp.buffer.resize(0);
-        ParseContainerArray<ParseArray<ParseFloat>> parser;
+        ParseContainerArray<std::vector<ParseArray<std::vector<ParseFloat::Type>,ParseFloat>::Type>,ParseArray<std::vector<ParseFloat::Type>,ParseFloat>> parser;
         std::string s("[[1],[2]]");
         REQUIRE(parser.Scan(s.c_str(), s.c_str() + s.size(), pp) == s.c_str() + s.size());
         parser.Swap(out);
@@ -1035,7 +1035,7 @@ TEST_CASE("Float array array") {
     }
     SUBCASE("[[1,2],[3,4]]") {
         pp.buffer.resize(0);
-        ParseContainerArray<ParseArray<ParseFloat>> parser;
+        ParseContainerArray<std::vector<ParseArray<std::vector<ParseFloat::Type>,ParseFloat>::Type>,ParseArray<std::vector<ParseFloat::Type>,ParseFloat>> parser;
         std::string s("[[1,2],[3,4]]");
         REQUIRE(parser.Scan(s.c_str(), s.c_str() + s.size(), pp) == s.c_str() + s.size());
         parser.Swap(out);
@@ -1049,7 +1049,7 @@ TEST_CASE("Float array array") {
     }
     SUBCASE("[[1],[]]") {
         pp.buffer.resize(0);
-        ParseContainerArray<ParseArray<ParseFloat>> parser;
+        ParseContainerArray<std::vector<ParseArray<std::vector<ParseFloat::Type>,ParseFloat>::Type>,ParseArray<std::vector<ParseFloat::Type>,ParseFloat>> parser;
         std::string s("[[1],[]]");
         REQUIRE(parser.Scan(s.c_str(), s.c_str() + s.size(), pp) == s.c_str() + s.size());
         parser.Swap(out);
@@ -1062,58 +1062,58 @@ TEST_CASE("Float array array") {
 
 TEST_CASE("Array failures") {
     ParserPool pp;
-    ParseContainerArray<ParseArray<ParseFloat>>::Type out;
+    ParseContainerArray<std::vector<ParseArray<std::vector<ParseFloat::Type>,ParseFloat>::Type>,ParseArray<std::vector<ParseFloat::Type>,ParseFloat>>::Type out;
     SUBCASE("[[1][]]") {
         pp.buffer.resize(0);
-        ParseContainerArray<ParseArray<ParseFloat>> parser;
+        ParseContainerArray<std::vector<ParseArray<std::vector<ParseFloat::Type>,ParseFloat>::Type>,ParseArray<std::vector<ParseFloat::Type>,ParseFloat>> parser;
         std::string s("[[1][]]");
         REQUIRE_THROWS_AS(parser.Scan(s.c_str(), s.c_str() + s.size(), pp), SpecificException);
     }
     SUBCASE("invalid") {
         pp.buffer.resize(0);
-        ParseContainerArray<ParseArray<ParseFloat>> parser;
+        ParseContainerArray<std::vector<ParseArray<std::vector<ParseFloat::Type>,ParseFloat>::Type>,ParseArray<std::vector<ParseFloat::Type>,ParseFloat>> parser;
         std::string s("invalid");
         REQUIRE_THROWS_AS(parser.Scan(s.c_str(), s.c_str() + s.size(), pp), SpecificException);
     }
     SUBCASE("]") {
         pp.buffer.resize(0);
-        ParseContainerArray<ParseArray<ParseFloat>> parser;
+        ParseContainerArray<std::vector<ParseArray<std::vector<ParseFloat::Type>,ParseFloat>::Type>,ParseArray<std::vector<ParseFloat::Type>,ParseFloat>> parser;
         std::string s("]");
         REQUIRE_THROWS_AS(parser.Scan(s.c_str(), s.c_str() + s.size(), pp), SpecificException);
     }
     SUBCASE("[,") {
         pp.buffer.resize(0);
-        ParseContainerArray<ParseArray<ParseFloat>> parser;
+        ParseContainerArray<std::vector<ParseArray<std::vector<ParseFloat::Type>,ParseFloat>::Type>,ParseArray<std::vector<ParseFloat::Type>,ParseFloat>> parser;
         std::string s("[,");
         REQUIRE_THROWS_AS(parser.Scan(s.c_str(), s.c_str() + s.size(), pp), SpecificException);
     }
     SUBCASE("[ ,") {
         pp.buffer.resize(0);
-        ParseContainerArray<ParseArray<ParseFloat>> parser;
+        ParseContainerArray<std::vector<ParseArray<std::vector<ParseFloat::Type>,ParseFloat>::Type>,ParseArray<std::vector<ParseFloat::Type>,ParseFloat>> parser;
         std::string s("[ ,");
         REQUIRE_THROWS_AS(parser.Scan(s.c_str(), s.c_str() + s.size(), pp), SpecificException);
     }
     SUBCASE("[[],,") {
         pp.buffer.resize(0);
-        ParseContainerArray<ParseArray<ParseFloat>> parser;
+        ParseContainerArray<std::vector<ParseArray<std::vector<ParseFloat::Type>,ParseFloat>::Type>,ParseArray<std::vector<ParseFloat::Type>,ParseFloat>> parser;
         std::string s("[[],,");
         REQUIRE_THROWS_AS(parser.Scan(s.c_str(), s.c_str() + s.size(), pp), SpecificException);
     }
     SUBCASE("[[],]") {
         pp.buffer.resize(0);
-        ParseContainerArray<ParseArray<ParseFloat>> parser;
+        ParseContainerArray<std::vector<ParseArray<std::vector<ParseFloat::Type>,ParseFloat>::Type>,ParseArray<std::vector<ParseFloat::Type>,ParseFloat>> parser;
         std::string s("[[],]");
         REQUIRE_THROWS_AS(parser.Scan(s.c_str(), s.c_str() + s.size(), pp), SpecificException);
     }
     SUBCASE("[[] , ]") {
         pp.buffer.resize(0);
-        ParseContainerArray<ParseArray<ParseFloat>> parser;
+        ParseContainerArray<std::vector<ParseArray<std::vector<ParseFloat::Type>,ParseFloat>::Type>,ParseArray<std::vector<ParseFloat::Type>,ParseFloat>> parser;
         std::string s("[[] , ]");
         REQUIRE_THROWS_AS(parser.Scan(s.c_str(), s.c_str() + s.size(), pp), SpecificException);
     }
     SUBCASE("[[]") {
         pp.buffer.resize(0);
-        ParseContainerArray<ParseArray<ParseFloat>> parser;
+        ParseContainerArray<std::vector<ParseArray<std::vector<ParseFloat::Type>,ParseFloat>::Type>,ParseArray<std::vector<ParseFloat::Type>,ParseFloat>> parser;
         std::string s("[[]");
         REQUIRE(parser.Scan(s.c_str(), s.c_str() + s.size(), pp) == nullptr);
         REQUIRE_THROWS_AS(parser.Swap(out), SpecificException);
@@ -1139,7 +1139,7 @@ TEST_CASE("Float KeyValue") {
 TEST_CASE("Float array KeyValue") {
     ParserPool pp;
     SUBCASE("[1]") {
-        KeyContainerValue<name2, ParseArray<ParseFloat>> kv;
+        KeyContainerValue<name2, ParseArray<std::vector<ParseFloat::Type>,ParseFloat>> kv;
         decltype(kv)::Type out;
         std::string s("[1]");
         REQUIRE(strcmp(kv.Key(), name2) == 0);
@@ -1158,7 +1158,7 @@ TEST_CASE("KeyValues") {
         REQUIRE(strcmp(std::get<0>(kvs.fields).Key(), name) == 0);
     }
     SUBCASE("Two members") {
-        KeyValues<KeyValue<name, ParseFloat>, KeyContainerValue<name2, ParseArray<ParseFloat>>> kvs;
+        KeyValues<KeyValue<name, ParseFloat>, KeyContainerValue<name2, ParseArray<std::vector<ParseFloat::Type>,ParseFloat>>> kvs;
         REQUIRE(kvs.size() == 2);
         REQUIRE(strcmp(std::get<0>(kvs.fields).Key(), name) == 0);
         REQUIRE(strcmp(std::get<1>(kvs.fields).Key(), name2) == 0);
@@ -1271,7 +1271,7 @@ TEST_CASE("Object") {
         REQUIRE(std::get<1>(out).value == 3.0f);
     }
     SUBCASE("{ \"name\" : [1] }") {
-        ParseObject<KeyValues<KeyContainerValue<name, ParseArray<ParseFloat>>>,NamelessValues<Value<ParseArray<ParseFloat>>>> parser;
+        ParseObject<KeyValues<KeyContainerValue<name, ParseArray<std::vector<ParseFloat::Type>,ParseFloat>>>,NamelessValues<Value<ParseArray<std::vector<ParseFloat::Type>,ParseFloat>>>> parser;
         std::string s("{ \"name\" : [1] }");
         REQUIRE(parser.Scan(s.c_str(), s.c_str() + s.size(), pp) == s.c_str() + s.size());
         REQUIRE(parser.Finished() == true);

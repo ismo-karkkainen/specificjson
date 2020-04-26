@@ -54,7 +54,7 @@ $simples = {
     :include => 'SpecificJSON.hpp' },
   'array' => {
     :cont => true,
-    :fmt => 'specjson::ParseArray<%s>',
+    :fmt => 'specjson::ParseArray<std::vector<%{type}>,%{type}>',
     :include => 'SpecificJSON.hpp' },
   'object' => {
     :cont => true,
@@ -64,7 +64,7 @@ $simples = {
 $containers = {
   'array' => {
     :cont => true,
-    :fmt => 'specjson::ParseContainerArray<%s>',
+    :fmt => 'specjson::ParseContainerArray<std::vector<%{type}>,%{type}>',
     :include => 'SpecificJSON.hpp' }
 }
 
@@ -224,7 +224,7 @@ def define_types(info)
   if info.is_a? Array
     this = info.shift
     $includes.push(this[:include]) if this.has_key? :include
-    return add_type(this[:fmt] % define_types(info))
+    return add_type(this[:fmt] % { :type => define_types(info)) }
   else
     $includes.push(info[:include]) if info.has_key? :include
     keyvalues = []

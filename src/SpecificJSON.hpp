@@ -38,15 +38,15 @@ public:
 class ParserPool;
 
 
-class SimpleValueParser {
+class ValueParser {
 protected:
     bool finished;
     const char* setFinished(const char* Endptr, ParserPool& Pool);
     const char* setFinished(const char* Endptr);
 
 public:
-    SimpleValueParser() : finished(true) { }
-    virtual ~SimpleValueParser();
+    ValueParser() : finished(true) { }
+    virtual ~ValueParser();
 
     bool Finished() const { return finished; }
     // Returns nullptr if not finished (reached end) or pointer where ended.
@@ -60,8 +60,7 @@ public:
     }
 };
 
-
-class ParseFloat : public SimpleValueParser {
+class ParseFloat : public ValueParser {
 public:
     typedef float Type;
     enum Pool { Index = 0 }; // Has to match ParserPool order.
@@ -71,7 +70,7 @@ public:
 };
 
 
-class ParseString : public SimpleValueParser {
+class ParseString : public ValueParser {
 public:
     typedef std::string Type;
 
@@ -90,7 +89,7 @@ public:
 };
 
 
-class ParseInt : public SimpleValueParser {
+class ParseInt : public ValueParser {
 public:
     typedef int Type;
     enum Pool { Index = 2 }; // Has to match ParserPool order.
@@ -126,10 +125,10 @@ public:
 
 extern SpecificException NotFinished;
 
-template<typename Parser>
-class ParseArray : public SimpleValueParser {
+template<typename Container, typename Parser, bool Swaps = false>
+class ParseArray : public ValueParser {
 public:
-    typedef std::vector<typename Parser::Type> Type;
+    typedef Container Type;
 
 private:
     Type out;
@@ -152,8 +151,8 @@ public:
 extern SpecificException InvalidArrayStart;
 extern SpecificException InvalidArraySeparator;
 
-template<typename Parser>
-const char* ParseArray<Parser>::Scan(
+template<typename Container, typename Parser, bool Swaps>
+const char* ParseArray<Container,Parser,Swaps>::Scan(
     const char* Begin, const char* End, ParserPool& Pool) noexcept(false)
 {
     Parser& p(std::get<Parser::Pool::Index>(Pool.Parser));
@@ -163,7 +162,11 @@ const char* ParseArray<Parser>::Scan(
         Begin = p.Scan(Begin, End, Pool);
         if (Begin == nullptr)
             return setFinished(nullptr);
-        out.push_back(value);
+        if constexpr (Swaps) {
+            out.push_back(typename Parser::Type());
+            p.Swap(out.back());
+        } else
+            out.push_back(value);
         expect_number = false;
     } else if (!began) {
         // Expect '[' on first call.
@@ -197,7 +200,11 @@ const char* ParseArray<Parser>::Scan(
             Begin = p.Scan(Begin, End, Pool);
             if (Begin == nullptr)
                 return setFinished(nullptr);
-            out.push_back(value);
+            if constexpr (Swaps) {
+                out.push_back(typename Parser::Type());
+                p.Swap(out.back());
+            } else
+                out.push_back(value);
             expect_number = false;
         }
         // Comma, maybe surrounded by spaces.
@@ -221,10 +228,10 @@ const char* ParseArray<Parser>::Scan(
 }
 
 
-template<typename Parser>
-class ParseContainerArray : public SimpleValueParser {
+template<typename Container, typename Parser>
+class ParseContainerArray : public ValueParser {
 public:
-    typedef std::vector<typename Parser::Type> Type;
+    typedef Container Type;
 
 private:
     Parser p;
@@ -245,8 +252,8 @@ public:
 };
 
 
-template<typename Parser>
-const char* ParseContainerArray<Parser>::Scan(
+template<typename Container, typename Parser>
+const char* ParseContainerArray<Container,Parser>::Scan(
     const char* Begin, const char* End, ParserPool& Pool) noexcept(false)
 {
     if (!p.Finished()) {
@@ -325,7 +332,7 @@ protected:
 public:
     ScanningKeyValue() : given(false) { }
     virtual ~ScanningKeyValue();
-    virtual SimpleValueParser& Scanner(ParserPool& Pool) = 0;
+    virtual ValueParser& Scanner(ParserPool& Pool) = 0;
     virtual const char* Key() const = 0;
     virtual void Swap(ValueStore* VS, ParserPool& Pool) = 0;
     virtual bool Required() const = 0;
@@ -345,7 +352,7 @@ public:
         given = false;
     }
 
-    SimpleValueParser& Scanner(ParserPool& Pool) {
+    ValueParser& Scanner(ParserPool& Pool) {
         given = true;
         return std::get<Parser::Pool::Index>(Pool.Parser);
     }
@@ -376,7 +383,7 @@ public:
         given = false;
     }
 
-    SimpleValueParser& Scanner(ParserPool& Pool) {
+    ValueParser& Scanner(ParserPool& Pool) {
         given = true;
         return p;
     }
@@ -425,7 +432,7 @@ public:
     }
 
     size_t size() const { return std::tuple_size<decltype(fields)>::value; }
-    SimpleValueParser& Scanner(size_t Index, ParserPool& Pool) {
+    ValueParser& Scanner(size_t Index, ParserPool& Pool) {
         return ptrs[Index]->Scanner(Pool);
     }
     ScanningKeyValue* KeyValue(size_t Index) { return ptrs[Index]; }
@@ -509,7 +516,7 @@ extern SpecificException InvalidKey;
 extern SpecificException RequiredKeyNotGiven;
 
 template<typename KeyValues, typename Values>
-class ParseObject : public SimpleValueParser {
+class ParseObject : public ValueParser {
 private:
     KeyValues parsers;
     Values out;
@@ -572,7 +579,6 @@ const char* ParseObject<KeyValues,Values>::Scan(
     const char* Begin, const char* End, ParserPool& Pool) noexcept(false)
 {
     while (Begin != End) {
-        // Re-order states to most expected first once works.
         switch (state) {
         case NotStarted:
             // Expect '{' on the first call.
