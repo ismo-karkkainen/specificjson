@@ -1,0 +1,6 @@
+Exception:
+  description: Exception class.
+  header: Exception.hpp
+  license: ../License.txt
+  includes:
+    - "#include <exception>"

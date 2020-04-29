@@ -1,0 +1,11 @@
+ParseArrayContainer:
+  external: false
+  description: Parses an array into a container.
+  header: ParseArrayContainer.hpp
+  source: ParseArrayContainer.cpp
+  license: ../License.txt
+  requires:
+    - ValueParser
+    - Exception
+  includes:
+    - "#include <utility>"

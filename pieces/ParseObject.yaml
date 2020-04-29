@@ -1,0 +1,13 @@
+ParseObject:
+  external: false
+  description: Parses an object into an instance.
+  header: ParseObject.hpp
+  source: ParseObject.cpp
+  license: ../License.txt
+  requires:
+    - ValueParser
+    - Exception
+  includes:
+    - "#include <tuple>"
+    - "#include <utility>"
+    - "#include <vector>"

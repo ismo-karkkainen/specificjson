@@ -1,0 +1,12 @@
+String:
+  description: Parses a string into std::string.
+  declaration: class ParseString;
+  pooled: PoolIndex
+  header: read_String.hpp
+  source: read_String.cpp
+  license: ../License.txt
+  requires:
+    - ValueParser
+    - Exception
+  includes:
+    - "#include <string>"

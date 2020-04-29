@@ -1,0 +1,19 @@
+StdVector:
+  description: Parses an array into std::vector.
+  container: true
+  containerContent: ContainerStdVector
+  header: read_StdVector.hpp
+  license: ../License.txt
+  requires:
+    - ParseArrayContainer
+  includes:
+    - "#include <vector>"
+ContainerStdVector:
+  description: Parses an array of containers into std::vector.
+  container: true
+  header: read_StdVector.hpp
+  license: ../License.txt
+  requires:
+    - ParseArrayContainer
+  includes:
+    - "#include <vector>"

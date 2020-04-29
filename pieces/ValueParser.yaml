@@ -1,0 +1,7 @@
+ValueParser:
+  description: Base class for all parsers.
+  header: ValueParser.hpp
+  source: ValueParser.cpp
+  license: ../License.txt
+  requires:
+    - ParserPool

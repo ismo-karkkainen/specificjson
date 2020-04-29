@@ -1,0 +1,6 @@
+ParserPool:
+  description: |
+      Generated calss to hold all simple aprsers that may need a buffer.
+  declaration: class ParserPool;
+  source: ParserPool.cpp
+  license: ../License.txt

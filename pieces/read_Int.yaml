@@ -1,0 +1,12 @@
+Int:
+  description: Parses number into int using strtol.
+  declaration: class ParseInt;
+  pooled: PoolIndex
+  header: read_Int.hpp
+  source: read_Int.cpp
+  license: ../License.txt
+  requires:
+    - ValueParser
+    - Exception
+  includes:
+    - "#include <cstdlib>"

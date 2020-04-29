@@ -1,0 +1,17 @@
+Double:
+  description: Parses number into double using strtod. Expects LC_NUMERIC C.
+  declaration: class ParseDouble;
+  pooled: PoolIndex
+  header: read_Double.hpp
+  source: read_Double.cpp
+  license: ../License.txt
+  requires:
+    - ValueParser
+    - Exception
+  includes:
+    - |
+      #if !defined(__GNUG__)
+      #include <cmath>
+      #else
+      #include <math.h>
+      #endif

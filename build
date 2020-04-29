@@ -1,0 +1,52 @@
+#!/usr/bin/env ruby
+
+# Copyright 2020 Ismo Kärkkäinen
+# Licensed under Universal Permissive License. See License.txt.
+
+require 'optparse'
+require 'yaml'
+
+$RECIPE = 'recipe.yaml'
+$SCRIPT = 'script.rb'
+$OUTPUT = 'specificjson'
+
+parser = OptionParser.new do |opts|
+  opts.summary_indent = '  '
+  opts.summary_width = 24
+  opts.banner = "Usage: build [options]"
+  opts.separator ""
+  opts.separator "Options:"
+  opts.on('-r', '--recipe FILENAME', "File list as YAML array. Default is #{$RECIPE}") { |f| $RECIPE = f }
+  opts.on('-s', '--script FILENAME', "Base script file name. Default is #{$SCRIPT}") { |f| $SCRIPT = f }
+  opts.on('-o', '--output FILENAME', "Output file name. Default is #{$OUTPUT}") { |f| $OUTPUT = f }
+  opts.on('-h', '--help', 'Print this help and exit.') do
+    STDOUT.puts opts
+    exit 0
+  end
+end
+parser.parse!
+
+if $RECIPE.nil?
+  STDERR.puts 'You must give --recipe'
+  exit(1)
+end
+
+if $OUTPUT == $RECIPE or $OUTPUT == $SCRIPT
+  STDERR.puts "Output #{$OUTPUT} equals recipe #{$RECIPE} or script #{$SCRIPT}"
+  exit(1)
+end
+
+$BYPASSOPTS = true
+load $SCRIPT
+
+$PIECES = {}
+load_more_pieces($RECIPE)
+
+$SCRIPT = IO.read($SCRIPT)
+
+IO.write($OUTPUT, $SCRIPT.sub('#$PIECESASSIGNMENT#', %Q(
+$PIECES = YAML.load(%Q(
+#{YAML.dump($PIECES)}
+))
+)))
+File.chmod(0755, $OUTPUT)
