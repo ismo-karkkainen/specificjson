@@ -7,8 +7,8 @@ require 'optparse'
 require 'yaml'
 
 $RECIPE = 'recipe.yaml'
-$SCRIPT = 'script.rb'
-$OUTPUT = 'specificjson'
+$REBUILD = nil
+$CLEAN = false
 
 parser = OptionParser.new do |opts|
   opts.summary_indent = '  '
@@ -16,9 +16,9 @@ parser = OptionParser.new do |opts|
   opts.banner = "Usage: build [options]"
   opts.separator ""
   opts.separator "Options:"
-  opts.on('-r', '--recipe FILENAME', "File list as YAML array. Default is #{$RECIPE}") { |f| $RECIPE = f }
-  opts.on('-s', '--script FILENAME', "Base script file name. Default is #{$SCRIPT}") { |f| $SCRIPT = f }
-  opts.on('-o', '--output FILENAME', "Output file name. Default is #{$OUTPUT}") { |f| $OUTPUT = f }
+  opts.on('-i', '--import FILENAME', "File list as YAML array. Default is #{$RECIPE}") { |f| $RECIPE = f }
+  opts.on('--rebuild FILENAME', "Re-built script name.") { |f| $REBUILD = f }
+  opts.on('--clean', 'Remove embedded information at re-build.') { $CLEAN = true }
   opts.on('-h', '--help', 'Print this help and exit.') do
     STDOUT.puts opts
     exit 0
@@ -26,27 +26,58 @@ parser = OptionParser.new do |opts|
 end
 parser.parse!
 
-if $RECIPE.nil?
-  STDERR.puts 'You must give --recipe'
-  exit(1)
-end
-
-if $OUTPUT == $RECIPE or $OUTPUT == $SCRIPT
-  STDERR.puts "Output #{$OUTPUT} equals recipe #{$RECIPE} or script #{$SCRIPT}"
-  exit(1)
-end
-
-$BYPASSOPTS = true
-load $SCRIPT
-
+#$PIECESASSIGNMENTSTART#
 $PIECES = {}
-load_more_pieces($RECIPE)
+#$PIECESASSIGNMENTEND#
 
-$SCRIPT = IO.read($SCRIPT)
+def load_piece(piece, field, directory)
+  file = piece.fetch(field, nil)
+  file = IO.read(File.join(directory, file)) unless file.nil?
+  piece[field] = file
+end
 
-IO.write($OUTPUT, $SCRIPT.sub('#$PIECESASSIGNMENT#', %Q(
+unless $RECIPE.nil?
+  recipe = YAML.load(File.open($RECIPE, 'r'))
+  unless recipe.is_a? Array
+    STDERR.puts 'Recipe file must be a YAML array of file names.'
+    exit(2)
+  end
+  recipe.each do |filename|
+    puts filename
+    piece = YAML.load(File.open(filename, 'r'))
+    d = File.dirname filename
+    piece.each_pair do |name, spec|
+      load_piece(spec, 'header', d)
+      load_piece(spec, 'source', d)
+      load_piece(spec, 'license', d)
+      # Set other defaults.
+      $PIECES[name] = spec
+    end
+  end
+end
+
+# Export option dealt with here.
+
+unless $REBUILD.nil?
+  if $CLEAN
+    $PIECES = {} # Yes, you can clean and re-build to same file without export.
+  end
+  script = File.new($0, chomp: true).readlines
+  first = script.find_index { |ln| ln.start_with? '#$PIECESASSIGNMENTSTART#' }
+  last = script.find_index { |ln| ln.start_with? '#$PIECESASSIGNMENTEND#' }
+  if first.nil? or last.nil? or last < first
+    STDERR.puts 'Failed to find lines starting with or in wrong order: #$PIECESASSIGNMENTSTART# #$PIECESASSIGNMENTEND#'
+    exit(2)
+  end
+  succeeding = script.slice(last, script.size - last)
+  script = script.slice(0, first + 1).join
+  script.concat(%Q(
 $PIECES = YAML.load(%Q(
 #{YAML.dump($PIECES)}
 ))
-)))
-File.chmod(0755, $OUTPUT)
+))
+  script.concat(succeeding.join)
+  IO.write($REBUILD, script)
+  File.chmod(0755, $REBUILD)
+  exit(0)
+end
