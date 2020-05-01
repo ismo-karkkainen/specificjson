@@ -1,0 +1,8 @@
+ContainerStdVector:
+  description: Parses an array of containers into std::vector.
+  header: read_ContainerStdVector.hpp
+  license: ../License.txt
+  requires:
+    - ParseArrayContainer
+  includes:
+    - "#include <vector>"

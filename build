@@ -5,20 +5,25 @@
 
 require 'optparse'
 require 'yaml'
+require 'json'
 
-$RECIPE = 'recipe.yaml'
+$IN = nil
+$RECIPE = nil
 $REBUILD = nil
 $CLEAN = false
+$WARN = false
 
 parser = OptionParser.new do |opts|
   opts.summary_indent = '  '
   opts.summary_width = 24
   opts.banner = "Usage: build [options]"
   opts.separator ""
-  opts.separator "Options:"
-  opts.on('-i', '--import FILENAME', "File list as YAML array. Default is #{$RECIPE}") { |f| $RECIPE = f }
-  opts.on('--rebuild FILENAME', "Re-built script name.") { |f| $REBUILD = f }
-  opts.on('--clean', 'Remove embedded information at re-build.') { $CLEAN = true }
+  opts.separator "Options (processed in order listed below):"
+  opts.on('--clean', 'Ignore embedded information.') { $CLEAN = true }
+  opts.on('--import FILELIST', 'Information YAML file list as YAML array.') { |f| $RECIPE = f }
+  opts.on('--warn', 'Only warn of missing requirements. Error otherwise.') { $WARN = true }
+  opts.on('--rebuild OUTPUT', 'Re-build to named script.') { |f| $REBUILD = f }
+  opts.on('-i', '--input FILENAME', 'Specifications to use.') { |f| $IN = f }
   opts.on('-h', '--help', 'Print this help and exit.') do
     STDOUT.puts opts
     exit 0
@@ -28,12 +33,34 @@ parser.parse!
 
 #$PIECESASSIGNMENTSTART#
 $PIECES = {}
+$FILECONTENTS = {}
 #$PIECESASSIGNMENTEND#
 
-def load_piece(piece, field, directory)
-  file = piece.fetch(field, nil)
-  file = IO.read(File.join(directory, file)) unless file.nil?
-  piece[field] = file
+if $CLEAN
+  $PIECES = {}
+  $FILECONTENTS = {}
+end
+
+def load_piece_file(piece, field, directory)
+  filename = piece.fetch(field, nil)
+  if filename.nil?
+    piece[field] = nil
+    return
+  end
+  file = IO.read(File.join(directory, filename))
+  stored = nil
+  keys = $FILECONTENTS.keys
+  for k in 0..keys.size
+    if $FILECONTENTS[keys[k]] == file
+      stored = keys[k]
+      break
+    end
+  end
+  if stored.nil?
+    stored = "c#{$FILECONTENTS.size}"
+    $FILECONTENTS[stored] = file
+  end
+  piece["#{field}_stored"] = stored
 end
 
 unless $RECIPE.nil?
@@ -47,21 +74,37 @@ unless $RECIPE.nil?
     piece = YAML.load(File.open(filename, 'r'))
     d = File.dirname filename
     piece.each_pair do |name, spec|
-      load_piece(spec, 'header', d)
-      load_piece(spec, 'source', d)
-      load_piece(spec, 'license', d)
-      # Set other defaults.
+      load_piece_file(spec, 'header', d)
+      load_piece_file(spec, 'source', d)
+      load_piece_file(spec, 'license', d)
+      spec['includes'] = [] unless spec.has_key? 'includes'
+      spec['requires'] = [] unless spec.has_key? 'requires'
+      spec['external'] = true unless spec.has_key? 'external'
+      spec['declaration'] = '' unless spec.has_key? 'declaration'
+      spec['pooled'] = nil unless spec.has_key? 'pooled'
+      spec['poolindexes'] = nil unless spec.has_key? 'poolindexes'
+      spec['poolparsers'] = nil unless spec.has_key? 'poolparsers'
+      spec['poolparsertypes'] = nil unless spec.has_key? 'poolparsertypes'
       $PIECES[name] = spec
     end
   end
 end
 
-# Export option dealt with here.
+# Check that requirements are met.
+missing = false
+$PIECES.each_pair do |name, spec|
+  spec['requires'].each do |r|
+    unless $PIECES.has_key? r
+      STDERR.puts "#{name} missing requirement: #{r}"
+      missing = true
+    end
+  end
+end
+exit(4) if missing and not $WARN
+
+# Eventual export option dealt with here.
 
 unless $REBUILD.nil?
-  if $CLEAN
-    $PIECES = {} # Yes, you can clean and re-build to same file without export.
-  end
   script = File.new($0, chomp: true).readlines
   first = script.find_index { |ln| ln.start_with? '#$PIECESASSIGNMENTSTART#' }
   last = script.find_index { |ln| ln.start_with? '#$PIECESASSIGNMENTEND#' }
@@ -69,15 +112,39 @@ unless $REBUILD.nil?
     STDERR.puts 'Failed to find lines starting with or in wrong order: #$PIECESASSIGNMENTSTART# #$PIECESASSIGNMENTEND#'
     exit(2)
   end
-  succeeding = script.slice(last, script.size - last)
+  succeeding = script.slice(last, script.size - last).join
   script = script.slice(0, first + 1).join
   script.concat(%Q(
 $PIECES = YAML.load(%Q(
 #{YAML.dump($PIECES)}
 ))
+$FILECONTENTS = YAML.load(%Q(
+#{YAML.dump($FILECONTENTS)}
 ))
-  script.concat(succeeding.join)
+))
+  script.concat(succeeding)
   IO.write($REBUILD, script)
   File.chmod(0755, $REBUILD)
   exit(0)
 end
+
+exit(0) if $IN.nil?
+
+input = File.new($IN, 'r').readlines
+begin
+  specs = JSON.parse(input)
+rescue StandardError
+  begin
+    specs = YAML.load(input)
+  rescue StandardError
+    STDERR.puts 'Input neither JSON not YAML.'
+    exit(3)
+  end
+end
+
+# Earlier input was 1 input, 1 output. Maybe should have an array that can
+# have multiple objects created. Has to have the input/output type and
+# ideally should not expect object at the top level.
+# Have direction that is either input or output.
+# Have format that if object, maps to object at top-level, or can be an array
+# of types, what there can be objects inside.

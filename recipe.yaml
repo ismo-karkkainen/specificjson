@@ -8,4 +8,5 @@
 - pieces/read_String.yaml
 - pieces/ParseArrayContainer.yaml
 - pieces/read_StdVector.yaml
+- pieces/read_ContainerStdVector.yaml
 - pieces/ParseObject.yaml

@@ -1,6 +1,10 @@
 ParserPool:
   description: |
-      Generated calss to hold all simple aprsers that may need a buffer.
+      Generated class to provide a shared buffer for all scalar value parsers.
   declaration: class ParserPool;
+  header: ParserPool.hpp
   source: ParserPool.cpp
+  poolindexes: PoolIndexes
+  poolparsers: PoolParsers
+  poolparsertypes: PoolParserTypes
   license: ../License.txt
