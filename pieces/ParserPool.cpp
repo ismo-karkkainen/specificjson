@@ -1,1 +1,1 @@
-ParserPool::~ParserPool() { }
+specjson::ParserPool::~ParserPool() { }

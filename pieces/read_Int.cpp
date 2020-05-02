@@ -1,6 +1,6 @@
-static Exception InvalidInt("Invalid integer.");
+static Exception specjson::InvalidInt("Invalid integer.");
 
-const char* ParseInt::Parse(
+const char* specjson::ParseInt::Parse(
     const char* Begin, const char* End, ParserPool& Pool) noexcept(false)
 {
     Type& out(std::get<ParseInt::Pool::Index>(Pool.Value));

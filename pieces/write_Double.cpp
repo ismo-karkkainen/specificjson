@@ -1,1 +1,1 @@
-Exception DoubleNotFinite("Double not finite.");
+Exception specjson::DoubleNotFinite("Double not finite.");

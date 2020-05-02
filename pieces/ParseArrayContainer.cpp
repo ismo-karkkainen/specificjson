@@ -1,3 +1,3 @@
-Exception NotFinished("Item not finished.");
-Exception InvalidArrayStart("Expected '['");
-Exception InvalidArraySeparator("Array, expected ','");
+Exception specjson::NotFinished("Item not finished.");
+Exception specjson::InvalidArrayStart("Expected '['");
+Exception specjson::InvalidArraySeparator("Array, expected ','");

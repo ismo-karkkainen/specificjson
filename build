@@ -6,10 +6,11 @@
 require 'optparse'
 require 'yaml'
 require 'json'
+require 'base64'
 
 $IN = nil
 $RECIPE = nil
-$REBUILD = nil
+$BUILD = nil
 $CLEAN = false
 $WARN = false
 
@@ -22,7 +23,7 @@ parser = OptionParser.new do |opts|
   opts.on('--clean', 'Ignore embedded information.') { $CLEAN = true }
   opts.on('--import FILELIST', 'Information YAML file list as YAML array.') { |f| $RECIPE = f }
   opts.on('--warn', 'Only warn of missing requirements. Error otherwise.') { $WARN = true }
-  opts.on('--rebuild OUTPUT', 'Re-build to named script.') { |f| $REBUILD = f }
+  opts.on('--build OUTPUT', 'Re-build to named script.') { |f| $BUILD = f }
   opts.on('-i', '--input FILENAME', 'Specifications to use.') { |f| $IN = f }
   opts.on('-h', '--help', 'Print this help and exit.') do
     STDOUT.puts opts
@@ -41,13 +42,20 @@ if $CLEAN
   $FILECONTENTS = {}
 end
 
+$FILECONTENTS.each_pair do |key, value|
+  $FILECONTENTS[key] = Base64.decode64(value)
+end
+
 def load_piece_file(piece, field, directory)
   filename = piece.fetch(field, nil)
   if filename.nil?
     piece[field] = nil
+    piece["#{field}_stored"] = nil
     return
   end
-  file = IO.read(File.join(directory, filename))
+  filename = File.realpath(filename, directory)
+  puts filename
+  file = IO.read(File.new(filename, 'r'))
   stored = nil
   keys = $FILECONTENTS.keys
   for k in 0..keys.size
@@ -63,13 +71,19 @@ def load_piece_file(piece, field, directory)
   piece["#{field}_stored"] = stored
 end
 
+def default(spec, field, value)
+  spec[field] = value unless spec.has_key? field
+end
+
 unless $RECIPE.nil?
   recipe = YAML.load(File.open($RECIPE, 'r'))
+  root = File.dirname(File.realpath($RECIPE))
   unless recipe.is_a? Array
     STDERR.puts 'Recipe file must be a YAML array of file names.'
     exit(2)
   end
   recipe.each do |filename|
+    filename = File.realpath(filename, root)
     puts filename
     piece = YAML.load(File.open(filename, 'r'))
     d = File.dirname filename
@@ -77,14 +91,20 @@ unless $RECIPE.nil?
       load_piece_file(spec, 'header', d)
       load_piece_file(spec, 'source', d)
       load_piece_file(spec, 'license', d)
-      spec['includes'] = [] unless spec.has_key? 'includes'
-      spec['requires'] = [] unless spec.has_key? 'requires'
-      spec['external'] = true unless spec.has_key? 'external'
-      spec['declaration'] = '' unless spec.has_key? 'declaration'
-      spec['pooled'] = nil unless spec.has_key? 'pooled'
-      spec['poolindexes'] = nil unless spec.has_key? 'poolindexes'
-      spec['poolparsers'] = nil unless spec.has_key? 'poolparsers'
-      spec['poolparsertypes'] = nil unless spec.has_key? 'poolparsertypes'
+      default(spec, 'includes', [])
+      default(spec, 'requires', [])
+      default(spec, 'external', true)
+      default(spec, 'declaration', nil)
+      default(spec, 'pooled', nil)
+      default(spec, 'poolindexes', nil)
+      default(spec, 'poolparsers', nil)
+      default(spec, 'poolparsertypes', nil)
+      default(spec, 'parsername', "Parse#{name}")
+      unless spec['pooled'].nil?
+        [ 'poolindexes', 'poolparsers', 'poolparsertypes' ].each do |field|
+          raise ArgumentError.new("#{name} has both pooled and #{field}") unless spec[field].nil?
+        end
+      end
       $PIECES[name] = spec
     end
   end
@@ -104,7 +124,7 @@ exit(4) if missing and not $WARN
 
 # Eventual export option dealt with here.
 
-unless $REBUILD.nil?
+unless $BUILD.nil?
   script = File.new($0, chomp: true).readlines
   first = script.find_index { |ln| ln.start_with? '#$PIECESASSIGNMENTSTART#' }
   last = script.find_index { |ln| ln.start_with? '#$PIECESASSIGNMENTEND#' }
@@ -114,37 +134,166 @@ unless $REBUILD.nil?
   end
   succeeding = script.slice(last, script.size - last).join
   script = script.slice(0, first + 1).join
+  encoded = {}
+  $FILECONTENTS.each_pair do |key, value|
+    encoded[key] = Base64.encode64(value)
+  end
   script.concat(%Q(
-$PIECES = YAML.load(%Q(
-#{YAML.dump($PIECES)}
-))
-$FILECONTENTS = YAML.load(%Q(
-#{YAML.dump($FILECONTENTS)}
-))
+$PIECES = YAML.load(%Q(#{YAML.dump($PIECES)}))
+$FILECONTENTS = YAML.load(%Q(#{YAML.dump(encoded)}))
 ))
   script.concat(succeeding)
-  IO.write($REBUILD, script)
-  File.chmod(0755, $REBUILD)
-  exit(0)
+  IO.write($BUILD, script)
+  File.chmod(0755, $BUILD)
 end
 
 exit(0) if $IN.nil?
 
-input = File.new($IN, 'r').readlines
+# Handle ParserPool substitutions.
+$pools = []
+$PIECES.each_pair do |name, spec|
+  $pools.push(name) unless spec['poolindexes'].nil? and spec['poolparsers'].nil? and spec['poolparsertypes'].nil?
+end
+$pooled = []
+$PIECES.each_pair do |name, spec|
+  unless spec['pooled'].nil?
+    $pooled.push(name)
+  end
+end
+poolvals = {
+  'poolindexes' => [],
+  'poolparsers' => [],
+  'poolparsertypes' => []
+}
+$pooled.each_index do |k|
+  piece = $PIECES[$pooled[k]]
+  poolvals['poolindexes'].push $pooled[k]
+  poolvals['poolparsers'].push piece['parsername']
+  poolvals['poolparsertypes'].push "#{piece['parsername']}::Type"
+  [ 'header', 'source' ].each do |field|
+    fc = piece["#{field}_stored"]
+    next if fc.nil?
+    until $FILECONTENTS[fc].sub!(piece['pooled'], k.to_s).nil?
+    end
+  end
+end
+poolvals.each_pair { |k, v| poolvals[k] = v.join(', ') }
+$pools.each do |name|
+  piece = $PIECES[name]
+  [ 'header', 'source' ].each do |field|
+    fc = piece["#{field}_stored"]
+    next if fc.nil?
+    poolvals.each_pair do |fld, value|
+      until $FILECONTENTS[fc].sub!(piece[fld], value).nil?
+      end
+    end
+  end
+end
+
+input = File.new($IN, 'r').read
 begin
   specs = JSON.parse(input)
 rescue StandardError
   begin
     specs = YAML.load(input)
   rescue StandardError
-    STDERR.puts 'Input neither JSON not YAML.'
+    STDERR.puts 'Input neither JSON nor YAML.'
     exit(3)
   end
+end
+
+def all_requirements(piece)
+  reqs = []
+  piece['requires'].each do |r|
+    reqs.push r
+    reqs.concat all_requirements($PIECES[r])
+  end
+  return reqs.uniq
+end
+
+def compare_pieces(a, b)
+  return -1 if $pooled.include? a and $pools.include? b
+  return 1 if $pooled.include? b and $pools.include? a
+  a = $PIECES[a]
+  b = $PIECES[b]
+  return 1 if a['requires'].include? b['name']
+  return -1 if b['requires'].include? a['name']
+  areqs = all_requirements(a)
+  breqs = all_requirements(b)
+  if areqs.include? b['name']
+    return areqs.length <=> breqs.length if breqs.include? a['name']
+    return 1
+  end
+  return -1 if breqs.include? a['name']
+  return areqs.length <=> breqs.length unless areqs.length == breqs.length
+  return a['name'] <=> b['name']
+end
+
+def make_header(spec, piece_names)
+  # Sort piece names according to requires.
+  piece_names.sort! { |a, b| compare_pieces(a, b) }
+  puts piece_names
+  h = File.new(spec['header'], 'w')
+  h.puts %Q(// Auto-generated file. Do not edit.
+#if !defined(#{spec['header'].upcase.sub('.', '_')})
+#define #{spec['header'].upcase.sub('.', '_')}
+)
+  # Include lines or conditional pre-processor blocks.
+  includes = []
+  piece_names.each do |name|
+    $PIECES[name]['includes'].each do |line|
+      includes.push(line) unless includes.include? line
+    end
+  end
+  h.puts includes.join("\n")
+  h.puts %Q(
+namespace #{spec['namespace']} {
+
+)
+  # Forward declarations.
+  piece_names.each do |name|
+    fwd = $PIECES[name]['declaration']
+    h.puts(fwd) unless fwd.nil?
+  end
+  piece_names.each do |name|
+    cn = $PIECES[name]['header_stored']
+    next if cn.nil?
+    h.puts
+    h.puts($FILECONTENTS[cn])
+  end
+  h.puts %Q(
+} // namespace #{spec['namespace']}
+
+#endif
+)
+  h.close
+end
+
+specs.each_pair do |name, spec|
+  default(spec, 'namespace', 'specjson')
+  default(spec, 'standalone', false)
+  default(spec, 'types', [])
+  default(spec, 'name', name)
+  default(spec, 'header_extension', 'hpp')
+  default(spec, 'source_extension', 'cpp')
+  default(spec, 'header', "#{spec['name']}.#{spec['header_extension']}")
+  default(spec, 'source', "#{spec['name']}.#{spec['source_extension']}")
+  # Set up remaining defaults.
+end
+
+specs.each_pair do |name, spec|
+  puts name
+  needed = []
+  # Figure out what the types need.
+  # If we have nothing in requirements then output the header and source.
+  if needed.empty?
+    needed = $PIECES.keys
+  end
+  make_header(spec, needed)
 end
 
 # Earlier input was 1 input, 1 output. Maybe should have an array that can
 # have multiple objects created. Has to have the input/output type and
 # ideally should not expect object at the top level.
 # Have direction that is either input or output.
-# Have format that if object, maps to object at top-level, or can be an array
-# of types, what there can be objects inside.
+

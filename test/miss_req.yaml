@@ -1,5 +1,4 @@
 ---
-- pieces/Exception.yaml
 - pieces/ParserPool.yaml
 - pieces/ValueParser.yaml
 - pieces/read_Double.yaml

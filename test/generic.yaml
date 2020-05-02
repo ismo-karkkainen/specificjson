@@ -1,0 +1,4 @@
+---
+specificjson:
+  standalone: true
+  namespace: specjson

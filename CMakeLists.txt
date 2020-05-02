@@ -35,6 +35,10 @@ if (UNIX AND NOT APPLE)
     find_package(Threads REQUIRED)
 endif()
 
+add_custom_target(specificjson ALL
+    COMMENT "Generating specificjson script"
+    DEPENDS ${CMAKE_CURRENT_LIST_DIR}/build.yaml ${CMAKE_CURRENT_LIST_DIR}/build
+    COMMAND ${CMAKE_CURRENT_LIST_DIR}/build --import ${CMAKE_CURRENT_LIST_DIR}/build.yaml --build specificjson)
 
 #### Tests
 
@@ -50,6 +54,31 @@ target_compile_options(unittest PRIVATE ${CxxStd})
 target_compile_options(unittest PRIVATE ${BuildOptions})
 add_test(NAME UnitTest COMMAND unittest)
 
+function(add_test_prog PROG)
+    add_executable(${PROG} IMPORTED)
+    set_property(TARGET ${PROG} PROPERTY IMPORTED_LOCATION ${CMAKE_CURRENT_LIST_DIR}/test/${PROG})
+endfunction()
+
+function(new_test TEST_NAME PROG)
+    add_test(NAME ${TEST_NAME} COMMAND ${PROG})
+    set_property(TEST ${TEST_NAME} PROPERTY ENVIRONMENT "PATH=${CMAKE_CURRENT_LIST_DIR}/test:$ENV{PATH}")
+endfunction()
+
+function(new_test_file TEST_NAME PROG TST)
+    add_test(NAME ${TEST_NAME} COMMAND ${PROG} ${CMAKE_CURRENT_LIST_DIR}/test/${}TST)
+    set_property(TEST ${TEST_NAME} PROPERTY ENVIRONMENT "PATH=${CMAKE_CURRENT_LIST_DIR}/test:$ENV{PATH}")
+endfunction()
+
+function(new_test5 TEST_NAME PROG WIDTH HEIGHT PLANES BITS FORMAT)
+    add_test(NAME ${TEST_NAME} COMMAND ${PROG} ${WIDTH} ${HEIGHT} ${PLANES} ${BITS} ${FORMAT})
+    set_property(TEST ${TEST_NAME} PROPERTY ENVIRONMENT "PATH=${CMAKE_CURRENT_LIST_DIR}:${CMAKE_CURRENT_LIST_DIR}/test:$ENV{PATH}")
+endfunction()
+
+add_test_prog(clean.sh)
+new_test(clean clean.sh)
+add_test_prog(miss_req.sh)
+new_test_file(missing_requirement_yaml miss_req.sh miss_req.yaml)
+new_test_file(missing_requirement_json miss_req.sh miss_req.json)
 
 #### Programs for profiling the code.
 

@@ -1,6 +1,6 @@
-static Exception InvalidFloat("Invalid float.");
+static Exception specjson::InvalidFloat("Invalid float.");
 
-const char* ParseFloat::Parse(
+const char* specjson::ParseFloat::Parse(
     const char* Begin, const char* End, ParserPool& Pool) noexcept(false)
 {
     Type& out(std::get<ParseFloat::Pool::Index>(Pool.Value));

@@ -1,16 +1,16 @@
-Exception InvalidKey("Object, unexpected key.");
-Exception RequiredKeyNotGiven("Object, required key not given.");
-Exception InvalidObjectStart("Expected '{'");
-Exception InvalidKeySeparator("Object, expected ','");
-Exception InvalidValueSeparator("Object, expected ':'");
+Exception specjson::InvalidKey("Object, unexpected key.");
+Exception specjson::RequiredKeyNotGiven("Object, required key not given.");
+Exception specjson::InvalidObjectStart("Expected '{'");
+Exception specjson::InvalidKeySeparator("Object, expected ','");
+Exception specjson::InvalidValueSeparator("Object, expected ':'");
 
-ScanningKeyValue::~ScanningKeyValue() { }
+specjson::ScanningKeyValue::~ScanningKeyValue() { }
 
-void ScanningKeyValue::Give(ValueStore* VS) {
+void specjson::ScanningKeyValue::Give(ValueStore* VS) {
     given = false;
     VS->Give();
 }
 
-void ValueStore::Give() {
+void specjson::ValueStore::Give() {
     given = true;
 }

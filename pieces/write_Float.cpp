@@ -1,1 +1,1 @@
-Exception FloatNotFinite("Float not finite.");
+Exception specjson::FloatNotFinite("Float not finite.");
