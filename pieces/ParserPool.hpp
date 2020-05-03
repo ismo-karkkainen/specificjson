@@ -7,8 +7,7 @@ public:
 
     std::vector<char> buffer;
 
-    enum Parsers { PoolIndexes }; // Match with order below.
-    // Match order with parsers' Pool enum Index values.
+    enum Parsers { PoolIndexes };
     std::tuple<PoolParsers> Parser;
     std::tuple<PoolParserTypes> Value;
 

@@ -92,6 +92,7 @@ unless $RECIPE.nil?
       load_piece_file(spec, 'source', d)
       load_piece_file(spec, 'license', d)
       default(spec, 'includes', [])
+      default(spec, 'source_includes', [])
       default(spec, 'requires', [])
       default(spec, 'external', true)
       default(spec, 'declaration', nil)
@@ -149,47 +150,6 @@ end
 
 exit(0) if $IN.nil?
 
-# Handle ParserPool substitutions.
-$pools = []
-$PIECES.each_pair do |name, spec|
-  $pools.push(name) unless spec['poolindexes'].nil? and spec['poolparsers'].nil? and spec['poolparsertypes'].nil?
-end
-$pooled = []
-$PIECES.each_pair do |name, spec|
-  unless spec['pooled'].nil?
-    $pooled.push(name)
-  end
-end
-poolvals = {
-  'poolindexes' => [],
-  'poolparsers' => [],
-  'poolparsertypes' => []
-}
-$pooled.each_index do |k|
-  piece = $PIECES[$pooled[k]]
-  poolvals['poolindexes'].push $pooled[k]
-  poolvals['poolparsers'].push piece['parsername']
-  poolvals['poolparsertypes'].push "#{piece['parsername']}::Type"
-  [ 'header', 'source' ].each do |field|
-    fc = piece["#{field}_stored"]
-    next if fc.nil?
-    until $FILECONTENTS[fc].sub!(piece['pooled'], k.to_s).nil?
-    end
-  end
-end
-poolvals.each_pair { |k, v| poolvals[k] = v.join(', ') }
-$pools.each do |name|
-  piece = $PIECES[name]
-  [ 'header', 'source' ].each do |field|
-    fc = piece["#{field}_stored"]
-    next if fc.nil?
-    poolvals.each_pair do |fld, value|
-      until $FILECONTENTS[fc].sub!(piece[fld], value).nil?
-      end
-    end
-  end
-end
-
 input = File.new($IN, 'r').read
 begin
   specs = JSON.parse(input)
@@ -202,71 +162,210 @@ rescue StandardError
   end
 end
 
-def all_requirements(piece)
-  reqs = []
-  piece['requires'].each do |r|
-    reqs.push r
-    reqs.concat all_requirements($PIECES[r])
+$PIECES.each_pair { |name, piece| piece['name'] = name }
+
+def all_requirements(piece, reqs)
+  unless reqs.include? piece['name']
+    reqs.push piece['name']
+    piece['requires'].each do |r|
+      next if reqs.include? r
+      all_requirements($PIECES[r], reqs)
+    end
   end
-  return reqs.uniq
+  return reqs
+end
+
+$PIECES.each_value do |piece|
+  piece['all_requires'] = all_requirements(piece, [])
+end
+
+def parserpool_substitutions(needed, namespace)
+  $pools = []
+  $pooled = []
+  needed.each do |name|
+    piece = $PIECES[name]
+    $pools.push(name) unless piece['poolindexes'].nil? and piece['poolparsers'].nil? and piece['poolparsertypes'].nil?
+    $pooled.push(name) unless piece['pooled'].nil?
+    [ 'header', 'source' ].each do |field|
+      fc = piece["#{field}_stored"]
+      next if fc.nil?
+      piece["#{field}_content"] = String.new($FILECONTENTS[fc])
+      next if 'specjson' == namespace
+      until piece["#{field}_content"].sub!('specjson::', "#{namespace}::").nil?
+      end
+    end
+  end
+  poolvals = {
+    'poolindexes' => [],
+    'poolparsers' => [],
+    'poolparsertypes' => []
+  }
+  $pooled.each_index do |k|
+    piece = $PIECES[$pooled[k]]
+    poolvals['poolindexes'].push $pooled[k]
+    poolvals['poolparsers'].push piece['parsername']
+    poolvals['poolparsertypes'].push "#{piece['parsername']}::Type"
+    [ 'header', 'source' ].each do |field|
+      fc = piece["#{field}_stored"]
+      next if fc.nil?
+      until piece["#{field}_content"].sub!(piece['pooled'], k.to_s).nil?
+      end
+    end
+  end
+  poolvals.each_pair { |k, v| poolvals[k] = v.join(', ') }
+  $pools.each do |name|
+    piece = $PIECES[name]
+    [ 'header', 'source' ].each do |field|
+      fc = piece["#{field}_stored"]
+      next if fc.nil?
+      poolvals.each_pair do |fld, value|
+        until piece["#{field}_content"].sub!(piece[fld], value).nil?
+        end
+      end
+    end
+  end
+end
+
+def licenses(needed)
+  lic2id = { }
+  needed.each do |name|
+    lic = $PIECES[name]['license_stored']
+    next if lic.nil? or lic2id.has_key? lic
+    lic2id[lic] = "License #{lic2id.size + 1}"
+  end
+  return lic2id
 end
 
 def compare_pieces(a, b)
-  return -1 if $pooled.include? a and $pools.include? b
-  return 1 if $pooled.include? b and $pools.include? a
   a = $PIECES[a]
   b = $PIECES[b]
-  return 1 if a['requires'].include? b['name']
-  return -1 if b['requires'].include? a['name']
-  areqs = all_requirements(a)
-  breqs = all_requirements(b)
+  areqs = a['all_requires']
+  breqs = b['all_requires']
   if areqs.include? b['name']
     return areqs.length <=> breqs.length if breqs.include? a['name']
     return 1
   end
   return -1 if breqs.include? a['name']
+  # Neither requires the other. Keep pools and pooled items before others.
+  if $pooled.include? a['name']
+    return -1 unless $pooled.include? b['name']
+  else
+    return 1 if $pooled.include? b['name']
+  end
+  if $pools.include? a['name']
+    return -1 unless $pools.include? b['name']
+  else
+    return 1 if $pools.include? b['name']
+  end
   return areqs.length <=> breqs.length unless areqs.length == breqs.length
   return a['name'] <=> b['name']
 end
 
-def make_header(spec, piece_names)
-  # Sort piece names according to requires.
-  piece_names.sort! { |a, b| compare_pieces(a, b) }
-  puts piece_names
+def arrange_needed(needed)
+  pools = needed.select { |name| $pools.include? name }
+  others = needed.select { |name| not(pools.include?(name)) }
+  others.sort! { |a, b| compare_pieces(a, b) }
+  last = others.rindex { |name| $pooled.include? name }
+  needed = others.slice!(0, last + 1)
+  others.concat pools
+  others.sort! { |a, b| compare_pieces(a, b) }
+  needed.concat others
+  return needed
+end
+
+def unique_in_order(piece_names, field)
+  values = []
+  piece_names.each do |name|
+    piece = $PIECES[name]
+    next if piece[field].nil?
+    if piece[field].is_a? String
+      values.push(piece[field]) unless values.include? piece[field]
+    else
+      piece[field].each do |line|
+        values.push(line) unless values.include? line
+      end
+    end
+  end
+  return values
+end
+
+def license_block(lic2id)
+  blocks = []
+  lic2id.each_pair do |lic, id|
+    blocks.push %Q(
+#if 0
+/*
+#{id}:
+
+#{$FILECONTENTS[lic]}
+*/
+#endif
+)
+  end
+  return blocks.join("\n")
+end
+
+def make_header(spec, piece_names, lic2id)
   h = File.new(spec['header'], 'w')
   h.puts %Q(// Auto-generated file. Do not edit.
 #if !defined(#{spec['header'].upcase.sub('.', '_')})
 #define #{spec['header'].upcase.sub('.', '_')}
+
+#{license_block(lic2id)}
 )
-  # Include lines or conditional pre-processor blocks.
-  includes = []
-  piece_names.each do |name|
-    $PIECES[name]['includes'].each do |line|
-      includes.push(line) unless includes.include? line
-    end
-  end
-  h.puts includes.join("\n")
   h.puts %Q(
+#{unique_in_order(piece_names, 'includes').join("\n")}
+
 namespace #{spec['namespace']} {
 
+#{unique_in_order(piece_names, 'declaration').join("\n")}
 )
-  # Forward declarations.
+  prev = nil
   piece_names.each do |name|
-    fwd = $PIECES[name]['declaration']
-    h.puts(fwd) unless fwd.nil?
-  end
-  piece_names.each do |name|
-    cn = $PIECES[name]['header_stored']
-    next if cn.nil?
+    piece = $PIECES[name]
+    next if piece['header_stored'].nil?
+    lic = piece['license_stored']
+    if lic != prev
+      h.puts
+      h.puts(lic.nil? ? '// Unspecified license.' : "// Under #{lic2id[lic]}.")
+      prev = lic
+    end
     h.puts
-    h.puts($FILECONTENTS[cn])
+    h.puts(piece['header_content'])
   end
   h.puts %Q(
 } // namespace #{spec['namespace']}
 
-#endif
-)
+#endif)
   h.close
+  return spec['header']
+end
+
+def make_source(spec, piece_names, lic2id, header_name)
+  h = File.new(spec['source'], 'w')
+  h.puts %Q(// Auto-generated file. Do not edit.
+#{license_block(lic2id)}
+
+#include "#{header_name}"
+#{unique_in_order(piece_names, 'source_includes').join("\n")}
+
+using namespace #{spec['namespace']};
+)
+  prev = nil
+  piece_names.each do |name|
+    piece = $PIECES[name]
+    next if piece['source_stored'].nil?
+    lic = piece['license_stored']
+    if lic != prev
+      h.puts
+      h.puts(lic.nil? ? '// Unspecified license.' : "// Under #{lic2id[lic]}.")
+      prev = lic
+    end
+    h.puts
+    h.puts(piece['source_content'])
+  end
+  h.close
+  return spec['source']
 end
 
 specs.each_pair do |name, spec|
@@ -282,18 +381,17 @@ specs.each_pair do |name, spec|
 end
 
 specs.each_pair do |name, spec|
-  puts name
   needed = []
   # Figure out what the types need.
   # If we have nothing in requirements then output the header and source.
   if needed.empty?
     needed = $PIECES.keys
   end
-  make_header(spec, needed)
+  parserpool_substitutions(needed, spec['namespace'])
+  needed = arrange_needed(needed)
+  lic2id = licenses(needed)
+  puts "#{name}: #{needed.join(' ')}"
+  hdr = make_header(spec, needed, lic2id)
+  src = make_source(spec, needed, lic2id, hdr)
+  puts "  Header: #{hdr}, source: #{src}"
 end
-
-# Earlier input was 1 input, 1 output. Maybe should have an array that can
-# have multiple objects created. Has to have the input/output type and
-# ideally should not expect object at the top level.
-# Have direction that is either input or output.
-
