@@ -1,2 +1,2 @@
 template<typename Parser>
-class ParseContainerStdVector : public ParseContainerArray<std::vector<Parser::Type>, Parser> { };
+class ParseContainerStdVector : public ParseContainerArray<std::vector<typename Parser::Type>, Parser> { };

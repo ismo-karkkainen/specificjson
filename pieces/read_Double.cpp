@@ -1,4 +1,4 @@
-static Exception specjson::InvalidDouble("Invalid double.");
+static Exception InvalidDouble("Invalid double.");
 
 const char* specjson::ParseDouble::Parse(
     const char* Begin, const char* End, ParserPool& Pool) noexcept(false)
@@ -17,7 +17,7 @@ const char* specjson::ParseDouble::Parse(
                 *Begin == 'e' || *Begin == 'E'))
                     ++Begin;
             if (Begin != end)
-                throw InvalidFloat;
+                throw InvalidDouble;
             return setFinished(end); // Good up to this.
         }
         // Copy good chars to buffer. Either end cut off or invalid.

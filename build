@@ -331,6 +331,7 @@ namespace #{spec['namespace']} {
       prev = lic
     end
     h.puts
+    h.puts "// Origin: #{piece['header']}"
     h.puts(piece['header_content'])
   end
   h.puts %Q(
@@ -362,6 +363,7 @@ using namespace #{spec['namespace']};
       prev = lic
     end
     h.puts
+    h.puts "// Origin: #{piece['source']}"
     h.puts(piece['source_content'])
   end
   h.close

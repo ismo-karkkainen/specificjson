@@ -40,16 +40,19 @@ add_custom_target(specificjson ALL
     DEPENDS ${CMAKE_CURRENT_LIST_DIR}/build.yaml ${CMAKE_CURRENT_LIST_DIR}/build
     COMMAND ${CMAKE_CURRENT_LIST_DIR}/build --import ${CMAKE_CURRENT_LIST_DIR}/build.yaml --build specificjson)
 
+add_custom_target(sources ALL
+    COMMENT "Generating specificjson script"
+    DEPENDS specificjson ${CMAKE_CURRENT_LIST_DIR}/test/generic.yaml
+    COMMAND ${CMAKE_CURRENT_BINARY_DIR}/specificjson --input ${CMAKE_CURRENT_LIST_DIR}/test/generic.yaml)
+
 #### Tests
 
 enable_testing()
 
-set(Sources src/SpecificJSON.cpp src/SpecificJSON.cpp)
-
-add_executable(unittest src/unittest.cpp ${Sources})
+add_executable(unittest src/unittest.cpp ${CMAKE_CURRENT_BINARY_DIR}/specificjson.cpp)
+add_dependencies(unittest sources)
 target_include_directories(unittest SYSTEM PRIVATE /usr/local/include)
-target_include_directories(unittest PRIVATE src)
-target_compile_definitions(unittest PRIVATE TESTDOC_UNITTEST)
+target_include_directories(unittest SYSTEM PRIVATE ${CMAKE_CURRENT_BINARY_DIR})
 target_compile_options(unittest PRIVATE ${CxxStd})
 target_compile_options(unittest PRIVATE ${BuildOptions})
 add_test(NAME UnitTest COMMAND unittest)
@@ -85,7 +88,7 @@ new_test_file(missing_requirement_json miss_req.sh miss_req.json)
 set(Profilers readfloatarray readfloatarray2 readstringarray readintarray)
 add_custom_target(profile COMMENT "Building programs to be run with profiler")
 add_dependencies(profile ${Profilers})
-set(Readers profile/BlockQueue.cpp profile/InputChannel.cpp profile/FileDescriptorInput.cpp src/SpecificJSON.cpp)
+set(Readers profile/BlockQueue.cpp profile/InputChannel.cpp profile/FileDescriptorInput.cpp specificjson.cpp)
 
 # Custom target that generates all profiler parsers at the same time.
 list(TRANSFORM Profilers APPEND "_io.hpp" OUTPUT_VARIABLE GenHpp)

@@ -1,4 +1,4 @@
-static Exception specjson::InvalidInt("Invalid integer.");
+static Exception InvalidInt("Invalid integer.");
 
 const char* specjson::ParseInt::Parse(
     const char* Begin, const char* End, ParserPool& Pool) noexcept(false)
