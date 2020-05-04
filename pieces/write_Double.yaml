@@ -1,0 +1,14 @@
+writeDouble:
+  writer: true
+  c++type: double
+  declaration: |
+    template<typename Sink>
+    void Write(Sink& S, double Value, std::vector<char>& Buffer);
+  header: write_Double.hpp
+  source: write_Double.cpp
+  license: ../License.txt
+  requires: Exception
+  includes:
+  - "#include <limits>"
+  - "#include <cstdio>"
+  - "#include <vector>"

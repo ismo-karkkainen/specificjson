@@ -1,0 +1,9 @@
+writePointer:
+  writer: true
+  scalar: false
+  declaration: |
+    template<typename Sink, typename T>
+    void Write(Sink& S, const T* Value, std::vector<char>& Buffer);
+  header: write_Pointer.hpp
+  license: ../License.txt
+  includes: "#include <vector>"

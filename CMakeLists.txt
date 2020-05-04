@@ -35,12 +35,12 @@ if (UNIX AND NOT APPLE)
     find_package(Threads REQUIRED)
 endif()
 
-add_custom_target(specificjson ALL
+add_custom_command(OUTPUT specificjson
     COMMENT "Generating specificjson script"
     DEPENDS ${CMAKE_CURRENT_LIST_DIR}/build.yaml ${CMAKE_CURRENT_LIST_DIR}/build
     COMMAND ${CMAKE_CURRENT_LIST_DIR}/build --import ${CMAKE_CURRENT_LIST_DIR}/build.yaml --build specificjson)
 
-add_custom_target(sources ALL
+add_custom_command(OUTPUT specificjson.hpp specificjson.cpp
     COMMENT "Generating specificjson script"
     DEPENDS specificjson ${CMAKE_CURRENT_LIST_DIR}/test/generic.yaml
     COMMAND ${CMAKE_CURRENT_BINARY_DIR}/specificjson --input ${CMAKE_CURRENT_LIST_DIR}/test/generic.yaml)
@@ -49,8 +49,7 @@ add_custom_target(sources ALL
 
 enable_testing()
 
-add_executable(unittest src/unittest.cpp ${CMAKE_CURRENT_BINARY_DIR}/specificjson.cpp)
-add_dependencies(unittest sources)
+add_executable(unittest test/unittest.cpp ${CMAKE_CURRENT_BINARY_DIR}/specificjson.cpp)
 target_include_directories(unittest SYSTEM PRIVATE /usr/local/include)
 target_include_directories(unittest SYSTEM PRIVATE ${CMAKE_CURRENT_BINARY_DIR})
 target_compile_options(unittest PRIVATE ${CxxStd})

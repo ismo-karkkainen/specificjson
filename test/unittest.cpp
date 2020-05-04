@@ -12,7 +12,6 @@
 
 using namespace specjson;
 
-/*
 TEST_CASE("Write numbers") {
     std::vector<char> buf;
     SUBCASE("1.23456789f") {
@@ -100,8 +99,7 @@ TEST_CASE("Unicodes") {
     std::vector<char> buf;
     SUBCASE("a[0x1] b") {
         std::basic_stringstream<char> s;
-        Write(s, "a\x1 b", buf);
-        REQUIRE(s.str() == "\"a\\u0001 b\"");
+        REQUIRE_THROWS_AS(Write(s, "a\x1 b", buf), Exception);
     }
     SUBCASE("a[0x9] b") {
         std::basic_stringstream<char> s;
@@ -113,31 +111,19 @@ TEST_CASE("Unicodes") {
         Write(s, "a\xa b", buf);
         REQUIRE(s.str() == "\"a\\n b\"");
     }
-    SUBCASE("a[0xf] b") {
-        std::basic_stringstream<char> s;
-        Write(s, "a\xf b", buf);
-        REQUIRE(s.str() == "\"a\\u000f b\"");
-    }
-    SUBCASE("a[0x10] b") {
-        std::basic_stringstream<char> s;
-        Write(s, "a\x10 b", buf);
-        REQUIRE(s.str() == "\"a\\u0010 b\"");
-    }
     SUBCASE("a[0x1f] b") {
         std::basic_stringstream<char> s;
-        Write(s, "a\x1f b", buf);
-        REQUIRE(s.str() == "\"a\\u001f b\"");
+        REQUIRE_THROWS_AS(Write(s, "a\x1f b", buf), Exception);
     }
     SUBCASE("a[0x20] b") {
         std::basic_stringstream<char> s;
         Write(s, "a\x20 b", buf);
         REQUIRE(s.str() == "\"a  b\"");
     }
-    SUBCASE("a[0x0] b") {
+    SUBCASE("a[0x0]") {
         std::basic_stringstream<char> s;
-        char src[] = "a\x0 b";
-        Write(s, src, src + 4, buf);
-        REQUIRE(s.str() == "\"a\\u0000 b\"");
+        char src[] = "a\x0";
+        REQUIRE_THROWS_AS(Write(s, src, src + 2, buf), Exception);
     }
 }
 
@@ -234,7 +220,6 @@ TEST_CASE("Number vector vector") {
         REQUIRE(s.str() == "[[1],[2]]");
     }
 }
-*/
 
 TEST_CASE("Floats") {
     ParserPool pp;

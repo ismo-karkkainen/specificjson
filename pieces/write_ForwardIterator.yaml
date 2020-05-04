@@ -1,0 +1,10 @@
+writeForwardIterator:
+  writer: true
+  scalar: false
+  declaration: |
+    template<typename Sink, typename ForwardIterator>
+    void Write(Sink& S, ForwardIterator& Begin, ForwardIterator& End, std::vector<char>& Buffer);
+  header: write_ForwardIterator.hpp
+  requires: writePointer
+  license: ../License.txt
+  includes: "#include <vector>"

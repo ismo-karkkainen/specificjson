@@ -5,10 +5,9 @@ void Write(
     Sink& S, const char* Begin, const char* End, std::vector<char>& Buffer)
 {
     char quote = '"';
-    char escaped[3] = "\\ ";
+    char escaped[2] = { '\\', '\x0' };
     S.write(&quote, 1);
     for (const char* curr = Begin; curr < End; ++curr) {
-        escaped[1] = 0;
         switch (*curr) {
         case '"': escaped[1] = '"'; break;
         case '\\': escaped[1] = '\\'; break;
@@ -21,13 +20,14 @@ void Write(
         if (escaped[1]) {
             S.write(Begin, curr - Begin);
             S.write(escaped, 2);
+            escaped[1] = 0;
             Begin = curr + 1;
         } else {
-            if constexpr (static_cast<char>(0x80) < 0) {
-                if (0 <= *curr && *curr < 0x20)
+            if constexpr ('\x80' < 0) {
+                if (0 <= *curr && *curr < '\x20')
                     throw InvalidJSONCharacter;
-            } else {
-                if (*curr < 0x20)
+            } else {
+                if (*curr < '\x20')
                     throw InvalidJSONCharacter;
             }
         }

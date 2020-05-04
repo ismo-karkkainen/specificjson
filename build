@@ -75,6 +75,13 @@ def default(spec, field, value)
   spec[field] = value unless spec.has_key? field
 end
 
+def defaultArray(spec, field, value)
+  default(spec, field, value)
+  unless spec[field].is_a? Array
+    spec[field] = [ spec[field] ]
+  end
+end
+
 unless $RECIPE.nil?
   recipe = YAML.load(File.open($RECIPE, 'r'))
   root = File.dirname(File.realpath($RECIPE))
@@ -91,16 +98,19 @@ unless $RECIPE.nil?
       load_piece_file(spec, 'header', d)
       load_piece_file(spec, 'source', d)
       load_piece_file(spec, 'license', d)
-      default(spec, 'includes', [])
-      default(spec, 'source_includes', [])
-      default(spec, 'requires', [])
-      default(spec, 'external', true)
+      default(spec, 'writer', false)
+      default(spec, 'c++type', nil)
+      default(spec, 'scalar', true)
+      defaultArray(spec, 'includes', [])
+      defaultArray(spec, 'source_includes', [])
+      defaultArray(spec, 'requires', [])
+      default(spec, 'external', not(spec['writer']))
       default(spec, 'declaration', nil)
       default(spec, 'pooled', nil)
       default(spec, 'poolindexes', nil)
       default(spec, 'poolparsers', nil)
       default(spec, 'poolparsertypes', nil)
-      default(spec, 'parsername', "Parse#{name}")
+      default(spec, 'parsername', spec['writer'] ? nil : "Parse#{name}")
       unless spec['pooled'].nil?
         [ 'poolindexes', 'poolparsers', 'poolparsertypes' ].each do |field|
           raise ArgumentError.new("#{name} has both pooled and #{field}") unless spec[field].nil?
@@ -239,6 +249,12 @@ end
 def compare_pieces(a, b)
   a = $PIECES[a]
   b = $PIECES[b]
+  # Group writers at the end.
+  if a['writer']
+    return 1 unless b['writer']
+  else
+    return -1 if b['writer']
+  end
   areqs = a['all_requires']
   breqs = b['all_requires']
   if areqs.include? b['name']
@@ -246,6 +262,13 @@ def compare_pieces(a, b)
     return 1
   end
   return -1 if breqs.include? a['name']
+  if a['writer'] and b['writer']
+    if a['scalar']
+      return -1 unless b['scalar']
+    else
+      return 1 if b['scalar']
+    end
+  end
   # Neither requires the other. Keep pools and pooled items before others.
   if $pooled.include? a['name']
     return -1 unless $pooled.include? b['name']
@@ -373,7 +396,7 @@ end
 specs.each_pair do |name, spec|
   default(spec, 'namespace', 'specjson')
   default(spec, 'standalone', false)
-  default(spec, 'types', [])
+  defaultArray(spec, 'types', [])
   default(spec, 'name', name)
   default(spec, 'header_extension', 'hpp')
   default(spec, 'source_extension', 'cpp')
@@ -385,9 +408,17 @@ end
 specs.each_pair do |name, spec|
   needed = []
   # Figure out what the types need.
-  # If we have nothing in requirements then output the header and source.
   if needed.empty?
+    unless spec['standalone']
+      puts "#{name} needs nothing and not standalone, skipped."
+      next
+    end
     needed = $PIECES.keys
+  elsif spec['standalone']
+    $pieces.each_pair do |name, piece|
+      next unless piece['writer']
+      needed.push(name) unless needed.include? name
+    end
   end
   parserpool_substitutions(needed, spec['namespace'])
   needed = arrange_needed(needed)

@@ -10,3 +10,10 @@
 - pieces/read_Int.yaml
 - pieces/read_StdVector.yaml
 - pieces/read_String.yaml
+- pieces/write_Double.yaml
+- pieces/write_Float.yaml
+- pieces/write_ForwardIterator.yaml
+- pieces/write_Int.yaml
+- pieces/write_Pointer.yaml
+- pieces/write_StdVector.yaml
+- pieces/write_String.yaml

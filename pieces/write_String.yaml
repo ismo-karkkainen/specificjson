@@ -1,0 +1,16 @@
+writeString:
+  writer: true
+  c++type:
+  - const char*, const char*
+  - std::string
+  - const char*
+  declaration: |
+    template<typename Sink>
+    void Write(Sink& S, const char* Begin, const char* End, std::vector<char>& Buffer);
+  header: write_String.hpp
+  source: write_String.cpp
+  license: ../License.txt
+  requires: Exception
+  includes:
+  - "#include <string>"
+  - "#include <vector>"

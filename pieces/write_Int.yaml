@@ -1,0 +1,11 @@
+writeInt:
+  writer: true
+  c++type: int
+  declaration: |
+    template<typename Sink>
+    void Write(Sink& S, int Value, std::vector<char>& Buffer);
+  header: write_Int.hpp
+  license: ../License.txt
+  includes:
+  - "#include <cstdio>"
+  - "#include <vector>"

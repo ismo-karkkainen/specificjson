@@ -1,0 +1,14 @@
+writeFloat:
+  writer: true
+  c++type: float
+  declaration: |
+    template<typename Sink>
+    void Write(Sink& S, float Value, std::vector<char>& Buffer);
+  header: write_Float.hpp
+  source: write_Float.cpp
+  license: ../License.txt
+  requires: Exception
+  includes:
+  - "#include <limits>"
+  - "#include <cstdio>"
+  - "#include <vector>"
