@@ -1,6 +1,7 @@
 ParserPool:
   description: |
       Generated class to provide a shared buffer for all scalar value parsers.
+  external: false
   declaration: class ParserPool;
   header: ParserPool.hpp
   source: ParserPool.cpp

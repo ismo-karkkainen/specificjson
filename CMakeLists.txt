@@ -42,8 +42,8 @@ add_custom_command(OUTPUT specificjson
 
 add_custom_command(OUTPUT specificjson.hpp specificjson.cpp
     COMMENT "Generating specificjson script"
-    DEPENDS specificjson ${CMAKE_CURRENT_LIST_DIR}/test/generic.yaml
-    COMMAND ${CMAKE_CURRENT_BINARY_DIR}/specificjson --input ${CMAKE_CURRENT_LIST_DIR}/test/generic.yaml)
+    DEPENDS specificjson ${CMAKE_CURRENT_LIST_DIR}/test/unittest.yaml
+    COMMAND ${CMAKE_CURRENT_BINARY_DIR}/specificjson --input ${CMAKE_CURRENT_LIST_DIR}/test/unittest.yaml)
 
 #### Tests
 
@@ -63,24 +63,29 @@ endfunction()
 
 function(new_test TEST_NAME PROG)
     add_test(NAME ${TEST_NAME} COMMAND ${PROG})
-    set_property(TEST ${TEST_NAME} PROPERTY ENVIRONMENT "PATH=${CMAKE_CURRENT_LIST_DIR}/test:$ENV{PATH}")
+    set_property(TEST ${TEST_NAME} PROPERTY ENVIRONMENT "PATH=${CMAKE_CURRENT_BINARY_DIR}:$ENV{PATH}")
 endfunction()
 
-function(new_test_file TEST_NAME PROG TST)
-    add_test(NAME ${TEST_NAME} COMMAND ${PROG} ${CMAKE_CURRENT_LIST_DIR}/test/${}TST)
-    set_property(TEST ${TEST_NAME} PROPERTY ENVIRONMENT "PATH=${CMAKE_CURRENT_LIST_DIR}/test:$ENV{PATH}")
+function(new_test1 TEST_NAME PROG TST)
+    add_test(NAME ${TEST_NAME} COMMAND ${PROG} ${CMAKE_CURRENT_LIST_DIR}/test/${TST})
+    set_property(TEST ${TEST_NAME} PROPERTY ENVIRONMENT "PATH=${CMAKE_CURRENT_BINARY_DIR}:$ENV{PATH}")
 endfunction()
 
 function(new_test5 TEST_NAME PROG WIDTH HEIGHT PLANES BITS FORMAT)
     add_test(NAME ${TEST_NAME} COMMAND ${PROG} ${WIDTH} ${HEIGHT} ${PLANES} ${BITS} ${FORMAT})
-    set_property(TEST ${TEST_NAME} PROPERTY ENVIRONMENT "PATH=${CMAKE_CURRENT_LIST_DIR}:${CMAKE_CURRENT_LIST_DIR}/test:$ENV{PATH}")
+    set_property(TEST ${TEST_NAME} PROPERTY ENVIRONMENT "PATH=${CMAKE_CURRENT_BINARY_DIR}:${CMAKE_CURRENT_LIST_DIR}/test:$ENV{PATH}")
 endfunction()
 
 add_test_prog(clean.sh)
 new_test(clean clean.sh)
 add_test_prog(miss_req.sh)
-new_test_file(missing_requirement_yaml miss_req.sh miss_req.yaml)
-new_test_file(missing_requirement_json miss_req.sh miss_req.json)
+new_test1(missing_requirement_yaml miss_req.sh miss_req.yaml)
+new_test1(missing_requirement_json miss_req.sh miss_req.json)
+add_test_prog(spec.sh)
+new_test1(missing_referred_file spec.sh spec_missing_header.yaml)
+new_test1(missing_spec_file spec.sh spec_missing_spec.yaml)
+add_test_prog(list.sh)
+new_test1(list list.sh ../build.yaml)
 
 #### Programs for profiling the code.
 

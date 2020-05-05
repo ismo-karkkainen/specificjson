@@ -13,16 +13,18 @@ $RECIPE = nil
 $BUILD = nil
 $CLEAN = false
 $WARN = false
+$LIST = false
 
 parser = OptionParser.new do |opts|
   opts.summary_indent = '  '
   opts.summary_width = 24
   opts.banner = "Usage: build [options]"
   opts.separator ""
-  opts.separator "Options (processed in order listed below):"
+  opts.separator "Options (handled in presented order):"
   opts.on('--clean', 'Ignore embedded information.') { $CLEAN = true }
   opts.on('--import FILELIST', 'Information YAML file list as YAML array.') { |f| $RECIPE = f }
-  opts.on('--warn', 'Only warn of missing requirements. Error otherwise.') { $WARN = true }
+  opts.on('--list', 'List the names that are available.') { $LIST = true }
+  opts.on('--warn', 'Warn about missing requirements instead of an error.') { $WARN = true }
   opts.on('--build OUTPUT', 'Re-build to named script.') { |f| $BUILD = f }
   opts.on('-i', '--input FILENAME', 'Specifications to use.') { |f| $IN = f }
   opts.on('-h', '--help', 'Print this help and exit.') do
@@ -53,20 +55,27 @@ def load_piece_file(piece, field, directory)
     piece["#{field}_stored"] = nil
     return
   end
-  filename = File.realpath(filename, directory)
-  puts filename
-  file = IO.read(File.new(filename, 'r'))
+  begin
+    filename = File.realpath(filename, directory)
+    puts filename
+    f = File.new(filename, 'r')
+    content = IO.read(f)
+    f.close
+  rescue StandardError
+    STDERR.puts "Failed to open/read: #{filename}"
+    exit(3)
+  end
   stored = nil
   keys = $FILECONTENTS.keys
   for k in 0..keys.size
-    if $FILECONTENTS[keys[k]] == file
+    if $FILECONTENTS[keys[k]] == content
       stored = keys[k]
       break
     end
   end
   if stored.nil?
     stored = "c#{$FILECONTENTS.size}"
-    $FILECONTENTS[stored] = file
+    $FILECONTENTS[stored] = content
   end
   piece["#{field}_stored"] = stored
 end
@@ -75,24 +84,50 @@ def default(spec, field, value)
   spec[field] = value unless spec.has_key? field
 end
 
-def defaultArray(spec, field, value)
+def default_array(spec, field, value)
   default(spec, field, value)
   unless spec[field].is_a? Array
     spec[field] = [ spec[field] ]
   end
 end
 
+def load_spec(filename)
+  begin
+    f = File.open(filename, 'r')
+    input = IO.read(f)
+    f.close
+  rescue StandardError
+    STDERR.puts "Failed to read #{filename}"
+    exit(3)
+  end
+  begin
+    specs = JSON.parse(input)
+  rescue StandardError
+    begin
+      specs = YAML.load(input)
+    rescue StandardError
+      STDERR.puts "#{filename} neither JSON nor YAML."
+      exit(3)
+    end
+  end
+  return specs
+end
+
 unless $RECIPE.nil?
-  recipe = YAML.load(File.open($RECIPE, 'r'))
+  recipe = load_spec($RECIPE)
   root = File.dirname(File.realpath($RECIPE))
   unless recipe.is_a? Array
     STDERR.puts 'Recipe file must be a YAML array of file names.'
     exit(2)
   end
   recipe.each do |filename|
-    filename = File.realpath(filename, root)
+    begin
+      filename = File.realpath(filename, root)
+    rescue StandardError
+      puts filename, root
+    end
     puts filename
-    piece = YAML.load(File.open(filename, 'r'))
+    piece = load_spec(filename)
     d = File.dirname filename
     piece.each_pair do |name, spec|
       load_piece_file(spec, 'header', d)
@@ -101,9 +136,9 @@ unless $RECIPE.nil?
       default(spec, 'writer', false)
       default(spec, 'c++type', nil)
       default(spec, 'scalar', true)
-      defaultArray(spec, 'includes', [])
-      defaultArray(spec, 'source_includes', [])
-      defaultArray(spec, 'requires', [])
+      default_array(spec, 'includes', [])
+      default_array(spec, 'source_includes', [])
+      default_array(spec, 'requires', [])
       default(spec, 'external', not(spec['writer']))
       default(spec, 'declaration', nil)
       default(spec, 'pooled', nil)
@@ -119,6 +154,15 @@ unless $RECIPE.nil?
       $PIECES[name] = spec
     end
   end
+end
+
+if $LIST
+  all = []
+  $PIECES.each_pair do |name, piece|
+    all.push("#{name}#{piece['external'] ? '' : ' (internal)'}")
+  end
+  all.sort!
+  puts all
 end
 
 # Check that requirements are met.
@@ -160,17 +204,7 @@ end
 
 exit(0) if $IN.nil?
 
-input = File.new($IN, 'r').read
-begin
-  specs = JSON.parse(input)
-rescue StandardError
-  begin
-    specs = YAML.load(input)
-  rescue StandardError
-    STDERR.puts 'Input neither JSON nor YAML.'
-    exit(3)
-  end
-end
+specs = load_spec($IN)
 
 $PIECES.each_pair { |name, piece| piece['name'] = name }
 
@@ -396,7 +430,7 @@ end
 specs.each_pair do |name, spec|
   default(spec, 'namespace', 'specjson')
   default(spec, 'standalone', false)
-  defaultArray(spec, 'types', [])
+  default_array(spec, 'types', [])
   default(spec, 'name', name)
   default(spec, 'header_extension', 'hpp')
   default(spec, 'source_extension', 'cpp')

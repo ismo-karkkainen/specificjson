@@ -1,5 +1,6 @@
 ValueParser:
   description: Base class for all parsers.
+  external: false
   header: ValueParser.hpp
   source: ValueParser.cpp
   license: ../License.txt
