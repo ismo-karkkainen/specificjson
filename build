@@ -91,13 +91,17 @@ def default_array(spec, field, value)
   end
 end
 
-def load_spec(filename)
+def load_spec(filename, root=nil)
   begin
+    unless root.nil?
+      filename = File.realpath(filename, root)
+      puts filename
+    end
     f = File.open(filename, 'r')
     input = IO.read(f)
     f.close
   rescue StandardError
-    STDERR.puts "Failed to read #{filename}"
+    STDERR.puts "Failed to find/read #{filename}"
     exit(3)
   end
   begin
@@ -121,24 +125,18 @@ unless $RECIPE.nil?
     exit(2)
   end
   recipe.each do |filename|
-    begin
-      filename = File.realpath(filename, root)
-    rescue StandardError
-      puts filename, root
-    end
-    puts filename
-    piece = load_spec(filename)
-    d = File.dirname filename
+    piece = load_spec(filename, root)
+    d = File.dirname(File.realpath(filename, root))
     piece.each_pair do |name, spec|
       load_piece_file(spec, 'header', d)
       load_piece_file(spec, 'source', d)
       load_piece_file(spec, 'license', d)
-      default(spec, 'writer', false)
-      default(spec, 'c++type', nil)
-      default(spec, 'scalar', true)
       default_array(spec, 'includes', [])
       default_array(spec, 'source_includes', [])
       default_array(spec, 'requires', [])
+      default(spec, 'writer', false)
+      default(spec, 'c++type', nil)
+      default(spec, 'scalar', true)
       default(spec, 'external', not(spec['writer']))
       default(spec, 'declaration', nil)
       default(spec, 'pooled', nil)
@@ -151,6 +149,7 @@ unless $RECIPE.nil?
           raise ArgumentError.new("#{name} has both pooled and #{field}") unless spec[field].nil?
         end
       end
+      puts("Replacing #{name}") if $PIECES.has_key? name
       $PIECES[name] = spec
     end
   end
@@ -427,16 +426,85 @@ using namespace #{spec['namespace']};
   return spec['source']
 end
 
+def assure(spec, field, error)
+  return if spec.has_key? field
+  STDERR.puts error
+  exit(4)
+end
+
 specs.each_pair do |name, spec|
   default(spec, 'namespace', 'specjson')
   default(spec, 'standalone', false)
-  default_array(spec, 'types', [])
+  default(spec, 'types', { })
+  default(spec, 'generate', { })
   default(spec, 'name', name)
   default(spec, 'header_extension', 'hpp')
   default(spec, 'source_extension', 'cpp')
   default(spec, 'header', "#{spec['name']}.#{spec['header_extension']}")
   default(spec, 'source', "#{spec['name']}.#{spec['source_extension']}")
-  # Set up remaining defaults.
+  spec['generate'].each_pair do |typename, gen|
+    unless spec['types'].has_key? typename
+      STDERR.puts "#{name} generate #{typename} has no match in types: #{spec['types'].keys.sort.join(' ')}"
+      exit(4)
+    end
+    default(gen, 'parser', false)
+    default(gen, 'writer', false)
+    default(gen, 'class', gen['parser'])
+  end
+  spec['types'].each_pair do |typename, object|
+    unless spec['generate'].has_key? typename
+      puts "#{name} #{typename} deleted since it has no match in generate: #{spec['generate'].keys.sort.join(' ')}"
+      spec['types'].delete typename
+      next
+    end
+    object['requires'] = []
+    object.each_pair do |field, desc|
+      assure(desc, 'format', "#{name} #{typename} #{field} has no 'format'.")
+      unless desc['format'].is_a? Array
+        desc['format'] = [ desc['format'] ]
+      end
+      default(desc, 'required', true)
+      gen = spec['generate'][typename]
+      if gen['parser']
+        default(desc, 'checker', nil)
+        default(desc, 'accessor', nil)
+      elsif gen['writer']
+        if desc['required']
+          assure(desc, 'checker', "#{name} #{typename} #{field} has no 'checker'.")
+        else
+          default(desc, 'checker', nil)
+        end
+        assure(desc, 'accessor', "#{name} #{typename} #{field} has no 'accessor'.")
+      end
+      object['requires'].concat desc['format']
+    end
+  end
+  spec['types'].each_pair do |typename, object|
+    object.each_pair do |field, desc|
+      desc['format'].each do |f|
+        unless f.is_a? String
+          STDERR.puts "#{name} #{typename} #{field} format not string."
+          exit(4)
+        end
+        if $PIECES.has_key? f
+          next if $PIECES[f]['external']
+          STDERR.puts "#{name} #{typename} #{field} format #{f} internal."
+          exit(4)
+        end
+        if spec['generate'].has_key? f
+          next if spec['generate'][f]['parser']
+          STDERR.puts "#{name} #{typename} #{field} format #{f} no parser."
+          exit(4)
+        end
+        if spec['types'].has_key? f
+          STDERR.puts "#{name} #{typename} #{field} format #{f} not generated."
+        else
+          STDERR.puts "#{name} #{typename} #{field} format #{f} not found: #{spec['types'].keys.sort.join(' ')}"
+        end
+        exit(4)
+      end
+    end
+  end
 end
 
 specs.each_pair do |name, spec|
