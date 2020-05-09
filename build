@@ -135,7 +135,6 @@ unless $RECIPE.nil?
       default_array(spec, 'source_includes', [])
       default_array(spec, 'requires', [])
       default(spec, 'writer', false)
-      default(spec, 'c++type', nil)
       default(spec, 'scalar', true)
       default(spec, 'external', not(spec['writer']))
       default(spec, 'declaration', nil)
@@ -144,6 +143,8 @@ unless $RECIPE.nil?
       default(spec, 'poolparsers', nil)
       default(spec, 'poolparsertypes', nil)
       default(spec, 'parsername', spec['writer'] ? nil : "Parse#{name}")
+      # Either use for writer template type or drop.
+      #default(spec, 'c++type', spec['writer'] ? nil : spec['parsername'])
       unless spec['pooled'].nil?
         [ 'poolindexes', 'poolparsers', 'poolparsertypes' ].each do |field|
           raise ArgumentError.new("#{name} has both pooled and #{field}") unless spec[field].nil?
@@ -361,7 +362,7 @@ def license_block(lic2id)
   return blocks.join("\n")
 end
 
-def make_header(spec, piece_names, lic2id)
+def make_header(spec, piece_names, generated, lic2id)
   h = File.new(spec['header'], 'w')
   h.puts %Q(// Auto-generated file. Do not edit.
 #if !defined(#{spec['header'].upcase.sub('.', '_')})
@@ -375,6 +376,7 @@ def make_header(spec, piece_names, lic2id)
 namespace #{spec['namespace']} {
 
 #{unique_in_order(piece_names, 'declaration').join("\n")}
+#{(generated.keys.map { |k| generated[k][:forward] }).join("\n")}
 )
   prev = nil
   piece_names.each do |name|
@@ -390,6 +392,16 @@ namespace #{spec['namespace']} {
     h.puts "// Origin: #{piece['header']}"
     h.puts(piece['header_content'])
   end
+  generated.each_pair do |typename, object|
+    h.puts %Q(
+// #{typename}
+#{object[:extern].join("\n")}
+
+#{object[:typedef].join("\n")}
+
+#{object[:class]}
+)
+  end
   h.puts %Q(
 } // namespace #{spec['namespace']}
 
@@ -398,7 +410,7 @@ namespace #{spec['namespace']} {
   return spec['header']
 end
 
-def make_source(spec, piece_names, lic2id, header_name)
+def make_source(spec, piece_names, generated, lic2id, header_name)
   h = File.new(spec['source'], 'w')
   h.puts %Q(// Auto-generated file. Do not edit.
 #{license_block(lic2id)}
@@ -421,6 +433,12 @@ using namespace #{spec['namespace']};
     h.puts
     h.puts "// Origin: #{piece['source']}"
     h.puts(piece['source_content'])
+  end
+  generated.each_pair do |typename, object|
+    h.puts %Q(
+// #{typename}
+#{object[:extern_src].join("\n")}
+)
   end
   h.close
   return spec['source']
@@ -449,7 +467,6 @@ specs.each_pair do |name, spec|
     end
     default(gen, 'parser', false)
     default(gen, 'writer', false)
-    default(gen, 'class', gen['parser'])
   end
   spec['types'].each_pair do |typename, object|
     unless spec['generate'].has_key? typename
@@ -457,36 +474,39 @@ specs.each_pair do |name, spec|
       spec['types'].delete typename
       next
     end
-    object['requires'] = []
+    object[:requires] = []
     object.each_pair do |field, desc|
-      assure(desc, 'format', "#{name} #{typename} #{field} has no 'format'.")
-      unless desc['format'].is_a? Array
-        desc['format'] = [ desc['format'] ]
+      next unless desc.is_a? Hash
+      if spec['generate'][typename]['parser']
+        assure(desc, 'format', "#{name} #{typename} #{field} has no 'format'.")
+        unless desc['format'].is_a? Array
+          desc['format'] = [ desc['format'] ]
+        end
+        object[:requires].concat desc['format']
       end
       default(desc, 'required', true)
       gen = spec['generate'][typename]
-      if gen['parser']
-        default(desc, 'checker', nil)
-        default(desc, 'accessor', nil)
-      elsif gen['writer']
+      if gen['writer'] and not gen['parser'] # Parser sets defaults later.
         if desc['required']
-          assure(desc, 'checker', "#{name} #{typename} #{field} has no 'checker'.")
+          default(desc, 'checker', nil) # Will not be used.
         else
-          default(desc, 'checker', nil)
+          assure(desc, 'checker', "#{name} #{typename} #{field} has no 'checker'.")
         end
         assure(desc, 'accessor', "#{name} #{typename} #{field} has no 'accessor'.")
       end
-      object['requires'].concat desc['format']
     end
   end
   spec['types'].each_pair do |typename, object|
     object.each_pair do |field, desc|
+      next unless desc.is_a? Hash
+      next unless spec['generate'][typename]['parser']
       desc['format'].each do |f|
         unless f.is_a? String
           STDERR.puts "#{name} #{typename} #{field} format not string."
           exit(4)
         end
         if $PIECES.has_key? f
+          object[:requires].push f
           next if $PIECES[f]['external']
           STDERR.puts "#{name} #{typename} #{field} format #{f} internal."
           exit(4)
@@ -504,29 +524,205 @@ specs.each_pair do |name, spec|
         exit(4)
       end
     end
+    object[:requires].uniq!
   end
+end
+
+def classify_expression(expr)
+  # Simple but good enough for now. If expression gets confused with method,
+  # add space in any place where it does not affect the meaning.
+  return :expression if expr.nil? # Will go unused in this case.
+  return :expression if expr.include? ' '
+  return :expression if expr.include?('.') or expr.include?('->')
+  return :method if expr.end_with? '()'
+  return :member
+end
+
+def write_function(spec, typename)
+  fwd = %Q(template<typename Sink>
+void Write(Sink& S, const #{typename}& Value, std::vector<char>& Buffer))
+  lines = [ %Q(
+#{fwd} {
+    char c = '{';
+    bool separated = true;
+    S.write(&c, 1);) ]
+  prev_req = nil
+  names = []
+  object = spec['types'][typename]
+  object.each_pair do |field, desc|
+    fill = ''
+    unless desc['required']
+      lines.push "    if (Value.#{desc['checker']}) {"
+      fill = '    '
+    end
+    if prev_req
+      lines.push "#{fill}    c = ',';"
+      lines.push "#{fill}    S.write(&c, 1);"
+    elsif not prev_req.nil?
+      lines.push "#{fill}    if (!separated) {"
+      lines.push "#{fill}        c = ',';"
+      lines.push "#{fill}        S.write(&c, 1);"
+      lines.push "#{fill}    }"
+    end
+    lines.push "#{fill}    Write(S, #{typename}_#{field}, Buffer);"
+    lines.push "#{fill}    c = ':';"
+    lines.push "#{fill}    S.write(&c, 1);"
+    lines.push "#{fill}    Write(S, Value.#{desc['accessor']}, Buffer);"
+    lines.push "#{fill}    separated = false;"
+    lines.push('    }') unless desc['required']
+    prev_req = desc['required']
+  end
+  lines.push %Q(    c = '}';
+    S.write(&c, 1);
+}
+)
+  return { :forward => fwd, :class => lines.join("\n") }
 end
 
 specs.each_pair do |name, spec|
   needed = []
-  # Figure out what the types need.
+  spec['generate'].each_pair do |typename, gen|
+    next unless spec['types'][typename].has_key? :requires
+    needed.concat spec['types'][typename][:requires]
+    spec['types'][typename].delete :requires
+  end
   if needed.empty?
     unless spec['standalone']
       puts "#{name} needs nothing and not standalone, skipped."
       next
     end
     needed = $PIECES.keys
-  elsif spec['standalone']
-    $pieces.each_pair do |name, piece|
-      next unless piece['writer']
-      needed.push(name) unless needed.include? name
+  else
+    if spec['standalone']
+      $PIECES.each_pair do |name, piece|
+        next unless piece['writer']
+        needed.push name
+      end
     end
+    needed.uniq!
   end
   parserpool_substitutions(needed, spec['namespace'])
   needed = arrange_needed(needed)
   lic2id = licenses(needed)
-  puts "#{name}: #{needed.join(' ')}"
-  hdr = make_header(spec, needed, lic2id)
-  src = make_source(spec, needed, lic2id, hdr)
+  generated = { }
+  spec['generate'].each_pair do |typename, gen|
+    object = spec['types'][typename]
+    out = {
+      :forward => '',
+      :typedef => [],
+      :extern => [],
+      :extern_src => [],
+      :class => ''
+    }
+    if gen['parser']
+      out[:forward] = "class #{typename};"
+      keyvalues = []
+      values = []
+      names = []
+      object.each_pair do |field, desc|
+        sub = "#{typename}_#{field}"
+        # Field name string constant.
+        out[:extern].push "extern const char const #{sub}[];"
+        out[:extern_src].push "const char const #{sub}[] = \"#{field}\";"
+        prev = nil
+        k = desc['format'].size - 1
+        f = desc['format'][k]
+        p = $PIECES[f]
+        out[:typedef].push "typedef #{p['parsername']}::Type #{sub}_#{k.to_s}"
+        while k > 0
+          k -= 1
+          f = desc['format'][k]
+          p = $PIECES[f]
+          out[:typedef].push "typedef #{p['parsername']}<#{sub}_#{(k + 1).to_s}> #{sub}_#{k.to_s};"
+        end
+        keyvalues.push "#{desc['required'] ? 'Required' : ''}Key#{(desc['format'].size > 1) ? 'Container' : ''}Value<#{sub},#{sub}_0>"
+        out[:typedef].push "typedef #{keyvalues.last} #{sub}_KeyValue;"
+        values.push "Value<#{sub}_0>"
+        names.push field
+        default(desc, 'accessor', "#{field}()")
+        desc[:access_type] = classify_expression(desc['accessor'])
+        default(desc, 'checker', "#{field}Given()")
+        desc[:check_type] = classify_expression(desc['checker'])
+      end
+      out[:typedef].push "typedef KeyValues<#{keyvalues.join(',')}> #{typename}_KeyValues;"
+      out[:typedef].push "typedef NamelessValues<#{values.join(',')}> #{typename}_NamelessValues;"
+      out[:typedef].push "typedef ParseObject<#{typename}_KeyValues,#{typename}_NamelessValues> #{typename}_Parser; // Parse with an instance of this."
+      out[:class] = %Q(
+class #{typename} {
+public:
+#{(names.map { |n| "    typedef #{values[names.find_index(n)]}::Type #{n}Type;"}
+).join("\n")}
+    #{typename}_Parser::Type values;
+
+#{(names.map { |n| "    bool #{n}Given() const { return std::get<#{names.find_index(n)}>(values).Given(); }"}).join("\n")}
+
+#{(names.map { |n| "    #{n}Type& #{n}() { return std::get<#{names.find_index(n)}>(values).value; }"}).join("\n")}
+#{(names.map { |n| "    const #{n}Type& #{n}() const { return std::get<#{names.find_index(n)}>(values).value; }"}).join("\n")}
+};
+)
+      if gen['writer']
+        wf = write_function(spec, typename)
+        out[:class] += wf[:class]
+        out[:forward] += "\n#{wf[:forward]}"
+      end
+      generated[typename] = out
+    elsif gen['writer']
+      object.each_pair do |field, desc|
+        sub = "#{typename}_#{field}"
+        out[:extern].push "extern const char const #{sub}[];"
+        out[:extern_src].push "const char const #{sub}[] = \"#{field}\";"
+        desc[:access_type] = classify_expression(desc['accessor'])
+        desc[:check_type] = classify_expression(desc['checker'])
+        desc[:tn] = "T_#{field}"
+      end
+      # Template class for write.
+      get_ind = object.keys.select { |k| object[k][:access_type] == :method }
+      get_dir = object.keys.select { |k| object[k][:access_type] != :method }
+      chk_ind = object.keys.select { |k| object[k][:check_type] == :method and not object[k][:required] }
+      tmpl = [ %Q(
+template<#{(object.keys.map { |k| "typename #{object[k][:tn]}" }).join(',')}>
+class #{typename}_Template {
+private:
+#{(get_ind.map { |f| "    #{object[f][:tn]} #{f}_value;" }).join("\n")}
+
+#{(chk_ind.map { |f| "    bool #{f}_given;" }).join("\n")}
+
+public:) ]
+      unless chk_ind.empty? # Constructor to set given indicators to false.
+        tmpl.push "    #{typename}_Template() : #{(chk_ind.map { |f| "#{f}_given(false)" }).join(', ')} { }"
+      end
+      tmpl.push(%Q(
+#{(chk_ind.map { |f| "    bool& #{object[f][:checker]} { return #{f}_given; }" }).join("\n")}
+#{(chk_ind.map { |f| "    bool #{object[f][:checker]} const { return #{f}_given; }" }).join("\n")}
+
+#{(get_dir.map { |f| "    #{object[f][:tn]} #{f};" }).join("\n")}
+
+#{(get_ind.map { |f| "    #{object[f][:tn]}& #{object[f]['accessor']} { return #{f}_value; };" }).join("\n")}
+#{(get_ind.map { |f| "    const #{object[f][:tn]}& #{object[f]['accessor']} const { return #{f}_value; }" }).join("\n")}
+};))
+      tmpl = tmpl.join("\n")
+      # Tweak the looks of output.
+      until (tmpl.sub!("\n\n\n", "\n\n")).nil? # Shrink two empty lines to 1.
+      end
+      tmpl.sub!("private:\n\n", "private:\n")
+      tmpl.sub!("public:\n\n", "public:\n")
+      tmpl.sub!("private:\npublic:", "public:") # Drop private if not used.
+      tmpl.sub!("\n\n};", "\n};")
+      # define check and typedef for template.
+      tmpl += %Q(
+#if defined(#{spec['namespace'].upcase}_#{typename.upcase}_TYPE)
+typedef #{spec['namespace'].upcase}_#{typename.upcase}_TYPE #{typename};
+#endif
+)
+      # write implementation using checkers and accessors.
+      wf = write_function(spec, typename)
+      out[:class] = tmpl + wf[:class]
+      out[:forward] += "\n#{wf[:forward]}"
+      generated[typename] = out
+    end
+  end
+  puts "#{name}: #{generated.keys.join(' ')} #{needed.join(' ')}"
+  hdr = make_header(spec, needed, generated, lic2id)
+  src = make_source(spec, needed, generated, lic2id, hdr)
   puts "  Header: #{hdr}, source: #{src}"
 end
