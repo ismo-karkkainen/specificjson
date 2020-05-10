@@ -71,8 +71,8 @@ function(new_test1 TEST_NAME PROG TST)
     set_property(TEST ${TEST_NAME} PROPERTY ENVIRONMENT "PATH=${CMAKE_CURRENT_BINARY_DIR}:$ENV{PATH}")
 endfunction()
 
-function(new_test5 TEST_NAME PROG WIDTH HEIGHT PLANES BITS FORMAT)
-    add_test(NAME ${TEST_NAME} COMMAND ${PROG} ${WIDTH} ${HEIGHT} ${PLANES} ${BITS} ${FORMAT})
+function(new_test2 TEST_NAME PROG TST A2)
+    add_test(NAME ${TEST_NAME} COMMAND ${PROG} ${CMAKE_CURRENT_LIST_DIR}/test/${TST} ${A2})
     set_property(TEST ${TEST_NAME} PROPERTY ENVIRONMENT "PATH=${CMAKE_CURRENT_BINARY_DIR}:${CMAKE_CURRENT_LIST_DIR}/test:$ENV{PATH}")
 endfunction()
 
@@ -86,6 +86,8 @@ new_test1(missing_referred_file spec.sh spec_missing_header.yaml)
 new_test1(missing_spec_file spec.sh spec_missing_spec.yaml)
 add_test_prog(list.sh)
 new_test1(list list.sh ../build.yaml)
+add_test_prog(standalone.sh)
+new_test2(standalone standalone.sh standalone.yaml standalone)
 
 #### Programs for profiling the code.
 

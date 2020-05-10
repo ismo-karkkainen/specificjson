@@ -376,7 +376,7 @@ def make_header(spec, piece_names, generated, lic2id)
 namespace #{spec['namespace']} {
 
 #{unique_in_order(piece_names, 'declaration').join("\n")}
-#{(generated.keys.map { |k| generated[k][:forward] }).join("\n")}
+#{(generated.keys.map { |k| generated[k][:forward].join("\n") }).join("\n")}
 )
   prev = nil
   piece_names.each do |name|
@@ -399,7 +399,7 @@ namespace #{spec['namespace']} {
 
 #{object[:typedef].join("\n")}
 
-#{object[:class]}
+#{object[:class].join("\n")}
 )
   end
   h.puts %Q(
@@ -539,23 +539,30 @@ def classify_expression(expr)
 end
 
 def write_function(spec, typename)
+  object = spec['types'][typename]
+  all_req = true
+  object.each_pair do |field, desc|
+    all_req = false unless desc['required']
+  end
   fwd = %Q(template<typename Sink>
 void Write(Sink& S, const #{typename}& Value, std::vector<char>& Buffer))
   lines = [ %Q(
 #{fwd} {
     char c = '{';
-    bool separated = true;
     S.write(&c, 1);) ]
+  lines.push('    bool separated = true;') unless all_req
   prev_req = nil
   names = []
-  object = spec['types'][typename]
-  object.each_pair do |field, desc|
+  fields = object.keys
+  # If write order is ever something other than the key one, change it here.
+  fields.each do |field|
+    desc = object[field]
     fill = ''
     unless desc['required']
       lines.push "    if (Value.#{desc['checker']}) {"
       fill = '    '
     end
-    if prev_req
+    if all_req or prev_req
       lines.push "#{fill}    c = ',';"
       lines.push "#{fill}    S.write(&c, 1);"
     elsif not prev_req.nil?
@@ -568,7 +575,7 @@ void Write(Sink& S, const #{typename}& Value, std::vector<char>& Buffer))
     lines.push "#{fill}    c = ':';"
     lines.push "#{fill}    S.write(&c, 1);"
     lines.push "#{fill}    Write(S, Value.#{desc['accessor']}, Buffer);"
-    lines.push "#{fill}    separated = false;"
+    lines.push("#{fill}    separated = false;") unless all_req or field == fields.last
     lines.push('    }') unless desc['required']
     prev_req = desc['required']
   end
@@ -594,9 +601,10 @@ specs.each_pair do |name, spec|
     needed = $PIECES.keys
   else
     if spec['standalone']
+      needed.concat($PIECES.keys)
+    else
       $PIECES.each_pair do |name, piece|
-        next unless piece['writer']
-        needed.push name
+        needed.push(name) if piece['writer']
       end
     end
     needed.uniq!
@@ -608,14 +616,14 @@ specs.each_pair do |name, spec|
   spec['generate'].each_pair do |typename, gen|
     object = spec['types'][typename]
     out = {
-      :forward => '',
+      :forward => [],
       :typedef => [],
       :extern => [],
       :extern_src => [],
-      :class => ''
+      :class => []
     }
     if gen['parser']
-      out[:forward] = "class #{typename};"
+      out[:forward].push "class #{typename};"
       keyvalues = []
       values = []
       names = []
@@ -647,7 +655,7 @@ specs.each_pair do |name, spec|
       out[:typedef].push "typedef KeyValues<#{keyvalues.join(',')}> #{typename}_KeyValues;"
       out[:typedef].push "typedef NamelessValues<#{values.join(',')}> #{typename}_NamelessValues;"
       out[:typedef].push "typedef ParseObject<#{typename}_KeyValues,#{typename}_NamelessValues> #{typename}_Parser; // Parse with an instance of this."
-      out[:class] = %Q(
+      out[:class].push %Q(
 class #{typename} {
 public:
 #{(names.map { |n| "    typedef #{values[names.find_index(n)]}::Type #{n}Type;"}
@@ -662,8 +670,8 @@ public:
 )
       if gen['writer']
         wf = write_function(spec, typename)
-        out[:class] += wf[:class]
-        out[:forward] += "\n#{wf[:forward]}"
+        out[:class].push wf[:class]
+        out[:forward].push wf[:forward]
       end
       generated[typename] = out
     elsif gen['writer']
@@ -708,16 +716,16 @@ public:) ]
       tmpl.sub!("public:\n\n", "public:\n")
       tmpl.sub!("private:\npublic:", "public:") # Drop private if not used.
       tmpl.sub!("\n\n};", "\n};")
+      out[:class].push tmpl
       # define check and typedef for template.
-      tmpl += %Q(
+      out[:class].push %Q(
 #if defined(#{spec['namespace'].upcase}_#{typename.upcase}_TYPE)
 typedef #{spec['namespace'].upcase}_#{typename.upcase}_TYPE #{typename};
 #endif
 )
-      # write implementation using checkers and accessors.
       wf = write_function(spec, typename)
-      out[:class] = tmpl + wf[:class]
-      out[:forward] += "\n#{wf[:forward]}"
+      out[:class].push wf[:class]
+      out[:forward].push wf[:forward]
       generated[typename] = out
     end
   end
