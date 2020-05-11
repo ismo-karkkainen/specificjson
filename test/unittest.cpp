@@ -7,7 +7,7 @@
 
 #define DOCTEST_CONFIG_IMPLEMENT_WITH_MAIN
 #include <doctest/doctest.h>
-#include "specificjson.hpp"
+#include "specificjsontest.hpp"
 #include <sstream>
 
 using namespace specjson;
