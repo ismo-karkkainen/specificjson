@@ -90,6 +90,10 @@ add_test_prog(list.sh)
 new_test1(list list.sh ../build.yaml)
 add_test_prog(standalone.sh)
 new_test2(standalone standalone.sh standalone.yaml standalone)
+add_test_prog(export.sh)
+new_test(export export.sh)
+add_test_prog(samename.sh)
+new_test1(samename samename.sh samename/samename.yaml)
 
 #### Programs for profiling the code.
 

@@ -8,12 +8,13 @@ require 'yaml'
 require 'json'
 require 'base64'
 
-$IN = nil
-$RECIPE = nil
-$BUILD = nil
 $CLEAN = false
-$WARN = false
+$RECIPE = nil
 $LIST = false
+$WARN = false
+$EXPORT = false
+$BUILD = nil
+$IN = nil
 
 parser = OptionParser.new do |opts|
   opts.summary_indent = '  '
@@ -25,6 +26,7 @@ parser = OptionParser.new do |opts|
   opts.on('--import FILELIST', 'Information YAML file list as YAML array.') { |f| $RECIPE = f }
   opts.on('--list', 'List the names that are available.') { $LIST = true }
   opts.on('--warn', 'Warn about missing requirements instead of an error.') { $WARN = true }
+  opts.on('--export', 'Export data to current directory as separate files.') { $EXPORT = true }
   opts.on('--build OUTPUT', 'Re-build to named script.') { |f| $BUILD = f }
   opts.on('-i', '--input FILENAME', 'Specifications to use.') { |f| $IN = f }
   opts.on('-h', '--help', 'Print this help and exit.') do
@@ -177,7 +179,76 @@ $PIECES.each_pair do |name, spec|
 end
 exit(4) if missing and not $WARN
 
-# Eventual export option dealt with here.
+if $EXPORT
+  pieces = {}
+  name2store = {}
+  $PIECES.each_pair do |name, piece|
+    piece = piece.clone
+    [ 'header', 'source', 'license' ].each do |field|
+      next if piece[field].nil?
+      b = File.basename piece[field]
+      s = piece["#{field}_stored"]
+      if name2store.has_key? b
+        name2store[b].push(s) unless name2store[b].include? s
+      else
+        name2store[b] = [ s ]
+      end
+      piece[field] = b
+    end
+    pieces[name] = piece
+  end
+  collisions = []
+  name2store.each_pair do |b, s|
+    if s.size == 1
+      f = File.new(b, 'w')
+      f.write($FILECONTENTS[s[0]])
+      f.close
+    else
+      collisions.push b
+    end
+  end
+  store2name = {}
+  collisions.each do |b|
+    s = name2store[b]
+    name2store.delete b
+    pre = File.basename(b, '.*')
+    ext = b.slice(pre.size, b.size - pre.size)
+    idx = 0
+    bn = b
+    s.each do |c|
+      while name2store.has_key? bn
+        idx += 1
+        bn = "#{pre}_#{idx}#{ext}"
+      end
+      store2name[c] = bn
+      f = File.new(bn, 'w')
+      f.write($FILECONTENTS[c])
+      f.close
+      name2store[bn] = [ c ]
+    end
+  end
+  list = []
+  pieces.each_pair do |name, piece|
+    [ 'header', 'source', 'license' ].each do |field|
+      if piece[field].nil?
+        piece.delete field
+      else
+        s = piece["#{field}_stored"]
+        if store2name.has_key? s
+          piece[field] = store2name[s]
+        end
+      end
+      piece.delete "#{field}_stored"
+    end
+    list.push "#{name}.yaml"
+    f = File.new(list.last, 'w')
+    f.write(YAML.dump({ name => piece }))
+    f.close
+  end
+  f = File.new('exported.yaml', 'w')
+  f.write(YAML.dump(list))
+  f.close
+end
 
 unless $BUILD.nil?
   script = File.new($0, chomp: true).readlines

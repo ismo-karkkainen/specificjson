@@ -1,0 +1,17 @@
+Float:
+  description: Parses number into float using strtof. Expects LC_NUMERIC C.
+  declaration: class ParseFloat;
+  pooled: PoolIndex
+  header: read_Float.hpp
+  source: read_Float.cpp
+  license: License.txt
+  requires:
+    - ValueParser
+    - Exception
+  includes:
+    - |
+      #if !defined(__GNUG__)
+      #include <cmath>
+      #else
+      #include <math.h>
+      #endif
