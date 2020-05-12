@@ -525,7 +525,8 @@ end
 
 specs.each_pair do |name, spec|
   default(spec, 'namespace', 'specjson')
-  default(spec, 'standalone', false)
+  default(spec, 'full', false)
+  default_array(spec, 'requires', [])
   default(spec, 'types', { })
   default(spec, 'generate', { })
   default(spec, 'name', name)
@@ -662,24 +663,38 @@ end
 
 specs.each_pair do |name, spec|
   needed = []
+  needed.concat spec['requires']
   spec['generate'].each_pair do |typename, gen|
     next unless spec['types'][typename].has_key? :requires
     needed.concat spec['types'][typename][:requires]
+    needed.push 'ParseObject'
     spec['types'][typename].delete :requires
   end
   if needed.empty?
-    unless spec['standalone']
-      puts "#{name} needs nothing and not standalone, skipped."
+    unless spec['full']
+      puts "#{name} needs nothing and not full, skipped."
       next
     end
     needed = $PIECES.keys
   else
-    if spec['standalone']
+    if spec['full']
       needed.concat($PIECES.keys)
     else
       $PIECES.each_pair do |name, piece|
         needed.push(name) if piece['writer']
       end
+      reqs = []
+      needed.each { |typename| reqs.concat $PIECES[typename]['requires'] }
+      reqs.uniq!
+      while true
+        s = reqs.size
+        added = []
+        reqs.each { |typename| added.concat $PIECES[typename]['requires'] }
+        reqs.concat added
+        reqs.uniq!
+        break if s == reqs.size
+      end
+      needed.concat reqs
     end
     needed.uniq!
   end
