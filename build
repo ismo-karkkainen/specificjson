@@ -486,7 +486,9 @@ def make_source(spec, piece_names, generated, lic2id, header_name)
   h.puts %Q(// Auto-generated file. Do not edit.
 #{license_block(lic2id)}
 
+#define INCLUDED_FROM_GENERATED_SOURCE 1
 #include "#{header_name}"
+#undef INCLUDED_FROM_GENERATED_SOURCE
 #{unique_in_order(piece_names, 'source_includes').join("\n")}
 
 using namespace #{spec['namespace']};
@@ -615,10 +617,10 @@ def write_function(spec, typename)
   object.each_pair do |field, desc|
     all_req = false unless desc['required']
   end
-  fwd = %Q(template<typename Sink>
-void Write(Sink& S, const #{typename}& Value, std::vector<char>& Buffer))
   lines = [ %Q(
-#{fwd} {
+#if !defined(INCLUDED_FROM_GENERATED_SOURCE)
+template<typename Sink>
+void Write(Sink& S, const #{typename}& Value, std::vector<char>& Buffer) {
     char c = '{';
     S.write(&c, 1);) ]
   lines.push('    bool separated = true;') unless all_req
@@ -653,8 +655,9 @@ void Write(Sink& S, const #{typename}& Value, std::vector<char>& Buffer))
   lines.push %Q(    c = '}';
     S.write(&c, 1);
 }
+#endif // INCLUDED_FROM_GENERATED_SOURCE
 )
-  return { :forward => fwd, :class => lines.join("\n") }
+  return lines.join("\n")
 end
 
 specs.each_pair do |name, spec|
@@ -701,13 +704,13 @@ specs.each_pair do |name, spec|
       object.each_pair do |field, desc|
         sub = "#{typename}_#{field}"
         # Field name string constant.
-        out[:extern].push "extern const char const #{sub}[];"
-        out[:extern_src].push "const char const #{sub}[] = \"#{field}\";"
+        out[:extern].push "extern const char #{sub}[];"
+        out[:extern_src].push "const char #{spec['namespace']}::#{sub}[] = \"#{field}\";"
         prev = nil
         k = desc['format'].size - 1
         f = desc['format'][k]
         p = $PIECES[f]
-        out[:typedef].push "typedef #{p['parsername']}::Type #{sub}_#{k.to_s}"
+        out[:typedef].push "typedef #{p['parsername']} #{sub}_#{k.to_s};"
         while k > 0
           k -= 1
           f = desc['format'][k]
@@ -740,16 +743,14 @@ public:
 };
 )
       if gen['writer']
-        wf = write_function(spec, typename)
-        out[:class].push wf[:class]
-        out[:forward].push wf[:forward]
+        out[:class].push write_function(spec, typename)
       end
       generated[typename] = out
     elsif gen['writer']
       object.each_pair do |field, desc|
         sub = "#{typename}_#{field}"
-        out[:extern].push "extern const char const #{sub}[];"
-        out[:extern_src].push "const char const #{sub}[] = \"#{field}\";"
+        out[:extern].push "extern const char #{sub}[];"
+        out[:extern_src].push "const char #{spec['namespace']}::#{sub}[] = \"#{field}\";"
         desc[:access_type] = classify_expression(desc['accessor'])
         desc[:check_type] = classify_expression(desc['checker'])
         desc[:tn] = "T_#{field}"
@@ -794,9 +795,7 @@ public:) ]
 typedef #{spec['namespace'].upcase}_#{typename.upcase}_TYPE #{typename};
 #endif
 )
-      wf = write_function(spec, typename)
-      out[:class].push wf[:class]
-      out[:forward].push wf[:forward]
+      out[:class].push write_function(spec, typename)
       generated[typename] = out
     end
   end
