@@ -1,5 +1,6 @@
 String:
   description: Parses a string into std::string.
+  parsername: ParseString
   declaration: class ParseString;
   pooled: PoolIndex
   header: read_String.hpp

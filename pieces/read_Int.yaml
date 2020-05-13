@@ -1,5 +1,6 @@
 Int:
   description: Parses number into int using strtol.
+  parsername: ParseInt
   declaration: class ParseInt;
   pooled: PoolIndex
   header: read_Int.hpp

@@ -9,6 +9,7 @@ require 'json'
 require 'base64'
 
 $CLEAN = false
+$DOC = false
 $RECIPE = nil
 $LIST = false
 $WARN = false
@@ -23,7 +24,8 @@ parser = OptionParser.new do |opts|
   opts.separator ""
   opts.separator "Options (handled in presented order):"
   opts.on('--clean', 'Ignore embedded information.') { $CLEAN = true }
-  opts.on('--import FILELIST', 'Information YAML file list as YAML array.') { |f| $RECIPE = f }
+  opts.on('--document', 'Print default values and information.') { $DOC = true }
+  opts.on('--import FILELIST', 'Piece YAML file list as YAML array.') { |f| $RECIPE = f }
   opts.on('--list', 'List the names that are available.') { $LIST = true }
   opts.on('--warn', 'Warn about missing requirements instead of an error.') { $WARN = true }
   opts.on('--export', 'Export data to current directory as separate files.') { $EXPORT = true }
@@ -36,10 +38,10 @@ parser = OptionParser.new do |opts|
 end
 parser.parse!
 
-#$PIECESASSIGNMENTSTART#
+#PIECESASSIGNMENTSTART#
 $PIECES = {}
 $FILECONTENTS = {}
-#$PIECESASSIGNMENTEND#
+#PIECESASSIGNMENTEND#
 
 if $CLEAN
   $PIECES = {}
@@ -49,6 +51,45 @@ end
 $FILECONTENTS.each_pair do |key, value|
   $FILECONTENTS[key] = Base64.decode64(value)
 end
+
+$DEFAULT = %Q(---
+piece:
+  includes: [] # Lines or blocks of (conditional) includes inserted in header.
+  source_includes: [] # As above but inserted in source file.
+  requires: [] # Other piece names that are required.
+  writer: false # Only true for pieces that have Write-function template.
+  scalar: true # True when piece parses a simple scalar value (int, string).
+  external: true # True when user can use the piece name in input specification.
+  declaration: ~ # Forward declaration for header file.
+  parsername: ~ # Parser class name.
+  pooled: ~ # ParserPool index replaces this string for parsers that use pool.
+  # These can only be given if pooled is not specified.
+  poolindexes: ~ # ParserPool Parsers enum contents replace this string.
+  poolparsers: ~ # ParserPool Parser tuple contents replace this string.
+  poolparsertypes: ~ # ParserPool Value tuple contents replace this string.
+specification:
+  namespace: specjson # Name space for output files.
+  full: false # Include unused parsers.
+  requires: [] # Pieces that are needed by code but not specified in types.
+  types: { } # Type names mapped to field specification objects.
+  generate: { } # Type names from types mapped to code generate instructions.
+  header_extension: hpp # Header file name extension. Used if header not given.
+  source_extension: cpp # Source file name extension. Used if source not given.
+  header: ~ # Specification name.header_extension unless given.
+  source: ~ # Specification name.source_extension unless given.
+types: # An object with field name mapped to object below.
+  format: REQUIRED # Piece name string or array of piece names.
+  required: true # Indicates whether field must be present in object.
+  checker: ~ # String inserted to code to check optional field in Write.
+  accessor: ~ # String inserted to code to get field value in Write.
+generate:
+  parser: false # Produce parser code for the type.
+  writer: false # Produce Write function and template for the type.
+)
+
+puts($DEFAULT) if $DOC
+
+$DEFAULT = YAML.load($DEFAULT)
 
 def load_piece_file(piece, field, directory)
   filename = piece.fetch(field, nil)
@@ -82,15 +123,26 @@ def load_piece_file(piece, field, directory)
   piece["#{field}_stored"] = stored
 end
 
+def defaults(kind, spec)
+  $DEFAULT[kind].each_pair do |field, value|
+    if spec.has_key? field
+      if value.is_a?(Array) and not spec[field].is_a? Array
+        spec[field] = [ spec[field] ]
+      end
+    else
+      spec[field] = value
+    end
+  end
+end
+
 def default(spec, field, value)
   spec[field] = value unless spec.has_key? field
 end
 
-def default_array(spec, field, value)
-  default(spec, field, value)
-  unless spec[field].is_a? Array
-    spec[field] = [ spec[field] ]
-  end
+def check_given(spec, kind, field, error)
+  return if spec[field] != $DEFAULT[kind][field]
+  STDERR.puts error
+  exit(4)
 end
 
 def load_spec(filename, root=nil)
@@ -133,20 +185,13 @@ unless $RECIPE.nil?
       load_piece_file(spec, 'header', d)
       load_piece_file(spec, 'source', d)
       load_piece_file(spec, 'license', d)
-      default_array(spec, 'includes', [])
-      default_array(spec, 'source_includes', [])
-      default_array(spec, 'requires', [])
-      default(spec, 'writer', false)
-      default(spec, 'scalar', true)
-      default(spec, 'external', not(spec['writer']))
-      default(spec, 'declaration', nil)
-      default(spec, 'pooled', nil)
-      default(spec, 'poolindexes', nil)
-      default(spec, 'poolparsers', nil)
-      default(spec, 'poolparsertypes', nil)
-      default(spec, 'parsername', spec['writer'] ? nil : "Parse#{name}")
-      # Either use for writer template type or drop.
-      #default(spec, 'c++type', spec['writer'] ? nil : spec['parsername'])
+      defaults('piece', spec)
+      if spec['external'] and spec['writer']
+        spec['external'] = false
+      end
+      if spec['external']
+        check_given(spec, 'piece', 'parsername', "#{filename} #{name} has no 'parsername'")
+      end
       unless spec['pooled'].nil?
         [ 'poolindexes', 'poolparsers', 'poolparsertypes' ].each do |field|
           raise ArgumentError.new("#{name} has both pooled and #{field}") unless spec[field].nil?
@@ -252,10 +297,10 @@ end
 
 unless $BUILD.nil?
   script = File.new($0, chomp: true).readlines
-  first = script.find_index { |ln| ln.start_with? '#$PIECESASSIGNMENTSTART#' }
-  last = script.find_index { |ln| ln.start_with? '#$PIECESASSIGNMENTEND#' }
+  first = script.find_index { |ln| ln.start_with? '#PIECESASSIGNMENTSTART#' }
+  last = script.find_index { |ln| ln.start_with? '#PIECESASSIGNMENTEND#' }
   if first.nil? or last.nil? or last < first
-    STDERR.puts 'Failed to find lines starting with or in wrong order: #$PIECESASSIGNMENTSTART# #$PIECESASSIGNMENTEND#'
+    STDERR.puts 'Failed to find lines starting with or in wrong order: #PIECESASSIGNMENTSTART# #PIECESASSIGNMENTEND#'
     exit(2)
   end
   succeeding = script.slice(last, script.size - last).join
@@ -517,30 +562,17 @@ using namespace #{spec['namespace']};
   return spec['source']
 end
 
-def assure(spec, field, error)
-  return if spec.has_key? field
-  STDERR.puts error
-  exit(4)
-end
-
 specs.each_pair do |name, spec|
-  default(spec, 'namespace', 'specjson')
-  default(spec, 'full', false)
-  default_array(spec, 'requires', [])
-  default(spec, 'types', { })
-  default(spec, 'generate', { })
+  defaults('specification', spec)
   default(spec, 'name', name)
-  default(spec, 'header_extension', 'hpp')
-  default(spec, 'source_extension', 'cpp')
-  default(spec, 'header', "#{spec['name']}.#{spec['header_extension']}")
-  default(spec, 'source', "#{spec['name']}.#{spec['source_extension']}")
+  spec['header'] = "#{spec['name']}.#{spec['header_extension']}" if spec['header'].nil?
+  spec['source'] = "#{spec['name']}.#{spec['source_extension']}" if spec['source'].nil?
   spec['generate'].each_pair do |typename, gen|
     unless spec['types'].has_key? typename
       STDERR.puts "#{name} generate #{typename} has no match in types: #{spec['types'].keys.sort.join(' ')}"
       exit(4)
     end
-    default(gen, 'parser', false)
-    default(gen, 'writer', false)
+    defaults('generate', gen)
   end
   spec['types'].each_pair do |typename, object|
     unless spec['generate'].has_key? typename
@@ -548,31 +580,27 @@ specs.each_pair do |name, spec|
       spec['types'].delete typename
       next
     end
-    object[:requires] = []
+    reqs = []
     object.each_pair do |field, desc|
-      next unless desc.is_a? Hash
+      defaults('types', desc)
       if spec['generate'][typename]['parser']
-        assure(desc, 'format', "#{name} #{typename} #{field} has no 'format'.")
-        unless desc['format'].is_a? Array
-          desc['format'] = [ desc['format'] ]
-        end
-        object[:requires].concat desc['format']
+        check_given(spec, 'types', 'format', "#{name} #{typename} #{field} has no 'format'.")
+        desc['format'] = [ desc['format'] ] unless desc['format'].is_a? Array
+        reqs.concat desc['format']
       end
-      default(desc, 'required', true)
       gen = spec['generate'][typename]
       if gen['writer'] and not gen['parser'] # Parser sets defaults later.
-        if desc['required']
-          default(desc, 'checker', nil) # Will not be used.
-        else
-          assure(desc, 'checker', "#{name} #{typename} #{field} has no 'checker'.")
+        unless desc['required']
+          check_given(desc, 'types', 'checker', "#{name} #{typename} #{field} has no 'checker'.")
         end
-        assure(desc, 'accessor', "#{name} #{typename} #{field} has no 'accessor'.")
+        check_given(desc, 'types', 'accessor', "#{name} #{typename} #{field} has no 'accessor'.")
       end
     end
+    object[:requires] = reqs.uniq
   end
   spec['types'].each_pair do |typename, object|
     object.each_pair do |field, desc|
-      next unless desc.is_a? Hash
+      next unless field.is_a? String
       next unless spec['generate'][typename]['parser']
       desc['format'].each do |f|
         unless f.is_a? String
@@ -598,7 +626,6 @@ specs.each_pair do |name, spec|
         exit(4)
       end
     end
-    object[:requires].uniq!
   end
 end
 

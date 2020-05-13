@@ -1,6 +1,5 @@
 writeFloat:
   writer: true
-  c++type: float
   declaration: |
     template<typename Sink>
     void Write(Sink& S, float Value, std::vector<char>& Buffer);

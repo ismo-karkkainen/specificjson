@@ -1,7 +1,6 @@
 writeStdVector:
   writer: true
   scalar: false
-  c++type: std::vector
   declaration: |
     template<typename Sink, typename T>
     void Write(Sink& S, const std::vector<T>& Value, std::vector<char>& Buffer);

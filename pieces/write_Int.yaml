@@ -1,6 +1,5 @@
 writeInt:
   writer: true
-  c++type: int
   declaration: |
     template<typename Sink>
     void Write(Sink& S, int Value, std::vector<char>& Buffer);

@@ -1,5 +1,6 @@
 Float:
   description: Parses number into float using strtof. Expects LC_NUMERIC C.
+  parsername: ParseFloat
   declaration: class ParseFloat;
   pooled: PoolIndex
   header: read_Float.hpp

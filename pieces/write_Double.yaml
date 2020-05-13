@@ -1,6 +1,5 @@
 writeDouble:
   writer: true
-  c++type: double
   declaration: |
     template<typename Sink>
     void Write(Sink& S, double Value, std::vector<char>& Buffer);

@@ -1,5 +1,6 @@
 ContainerStdVector:
   description: Parses an array of containers into std::vector.
+  parsername: ParseContainerStdVector
   header: read_ContainerStdVector.hpp
   license: ../License.txt
   requires:

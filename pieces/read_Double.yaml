@@ -1,5 +1,6 @@
 Double:
   description: Parses number into double using strtod. Expects LC_NUMERIC C.
+  parsername: ParseDouble
   declaration: class ParseDouble;
   pooled: PoolIndex
   header: read_Double.hpp

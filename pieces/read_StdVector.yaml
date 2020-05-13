@@ -1,5 +1,6 @@
 StdVector:
   description: Parses an array of scalars into std::vector.
+  parsername: ParseStdVector
   header: read_StdVector.hpp
   license: ../License.txt
   requires:
