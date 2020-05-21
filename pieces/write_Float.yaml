@@ -6,8 +6,8 @@ writeFloat:
   header: write_Float.hpp
   source: write_Float.cpp
   license: ../License.txt
-  requires: Exception
+  requires:
+  - Exception
+  - writeScalarType
   includes:
-  - "#include <limits>"
-  - "#include <cstdio>"
   - "#include <vector>"

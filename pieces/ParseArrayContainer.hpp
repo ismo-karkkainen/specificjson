@@ -1,6 +1,6 @@
-extern Exception NotFinished;
-extern Exception InvalidArrayStart;
-extern Exception InvalidArraySeparator;
+extern const Exception NotFinished;
+extern const Exception InvalidArrayStart;
+extern const Exception InvalidArraySeparator;
 
 template<typename Container, typename Parser, bool Swaps = false>
 class ParseArray : public ValueParser {

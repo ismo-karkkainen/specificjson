@@ -1,4 +1,4 @@
-extern Exception InvalidJSONCharacter;
+extern const Exception InvalidJSONCharacter;
 
 template<typename Sink>
 void Write(

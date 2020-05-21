@@ -6,8 +6,8 @@ writeDouble:
   header: write_Double.hpp
   source: write_Double.cpp
   license: ../License.txt
-  requires: Exception
+  requires:
+  - Exception
+  - writeScalarType
   includes:
-  - "#include <limits>"
-  - "#include <cstdio>"
   - "#include <vector>"

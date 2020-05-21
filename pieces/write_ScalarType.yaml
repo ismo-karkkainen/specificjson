@@ -1,0 +1,13 @@
+writeScalarType:
+  writer: true
+  declaration: |
+    template<typename Sink, typename T, const auto& Format>
+    void WriteScalarType(Sink& S, T Value, std::vector<char>& Buffer);
+  header: write_ScalarType.hpp
+  source: write_ScalarType.cpp
+  license: ../License.txt
+  includes:
+  - "#include <cstdio>"
+  - "#include <vector>"
+  source_includes:
+  - "#include <limits>"

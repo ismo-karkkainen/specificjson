@@ -55,6 +55,33 @@ For example std::ostream works.
 For a practical example see https://github.com/ismo-karkkainen/imageio
 README.md file and sources.
 
+## Input
+
+There are parser classes for some basic types and an array. The "types"
+allows you to specify the fields in a JSON object. For each field you specify
+format that specifies which parsers to use. Essentially the code generation
+produces typedefs that indicate what you expect and the matching C++ types.
+
+## Output
+
+Since the type information is available in the C++ types that you intend to
+output, only thing to do is have a Write-function template for each type so
+that compiler can find a proper match. The generated type template is for
+convenience, in case you do not already have a class with output fields.
+
+The Write function generation requires that you tell how to check whether
+optional field should be output, and how to access the field. As the template
+has public members named as the fields, the default is to use those directly.
+The check is used in conditional expression as "Value.checker" where checker
+is the expression and Value refers to the object that is being written.
+Likewise "Value.accessor" is used as parameter to Write where accessor is the
+given expression. If you use the template, then this is the member name.
+
+## Limitations
+
+Input is expected to be a JSON object. If you have an array or scalar, you have
+to provide the typedefs yourself.
+
 # License
 
 Copyright (C) 2020 Ismo Kärkkäinen

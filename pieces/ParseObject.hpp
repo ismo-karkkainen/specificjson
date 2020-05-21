@@ -1,8 +1,8 @@
-extern Exception InvalidKey;
-extern Exception RequiredKeyNotGiven;
-extern Exception InvalidObjectStart;
-extern Exception InvalidKeySeparator;
-extern Exception InvalidValueSeparator;
+extern const Exception InvalidKey;
+extern const Exception RequiredKeyNotGiven;
+extern const Exception InvalidObjectStart;
+extern const Exception InvalidKeySeparator;
+extern const Exception InvalidValueSeparator;
 
 
 class ValueStore;

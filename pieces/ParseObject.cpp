@@ -1,8 +1,8 @@
-Exception specjson::InvalidKey("Object, unexpected key.");
-Exception specjson::RequiredKeyNotGiven("Object, required key not given.");
-Exception specjson::InvalidObjectStart("Expected '{'");
-Exception specjson::InvalidKeySeparator("Object, expected ','");
-Exception specjson::InvalidValueSeparator("Object, expected ':'");
+const Exception specjson::InvalidKey("Object, unexpected key.");
+const Exception specjson::RequiredKeyNotGiven("Object, required key not given.");
+const Exception specjson::InvalidObjectStart("Expected '{'");
+const Exception specjson::InvalidKeySeparator("Object, expected ','");
+const Exception specjson::InvalidValueSeparator("Object, expected ':'");
 
 specjson::ScanningKeyValue::~ScanningKeyValue() { }
 

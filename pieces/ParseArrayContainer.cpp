@@ -1,3 +1,3 @@
-Exception specjson::NotFinished("Item not finished.");
-Exception specjson::InvalidArrayStart("Expected '['");
-Exception specjson::InvalidArraySeparator("Array, expected ','");
+const Exception specjson::NotFinished("Item not finished.");
+const Exception specjson::InvalidArrayStart("Expected '['");
+const Exception specjson::InvalidArraySeparator("Array, expected ','");

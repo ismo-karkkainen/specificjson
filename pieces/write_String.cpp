@@ -1,1 +1,1 @@
-Exception specjson::InvalidJSONCharacter("Invalid JSON character.");
+const Exception specjson::InvalidJSONCharacter("Invalid JSON character.");

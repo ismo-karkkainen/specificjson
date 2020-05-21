@@ -12,6 +12,7 @@
 - pieces/read_String.yaml
 - pieces/write_Double.yaml
 - pieces/write_Float.yaml
+- pieces/write_ScalarType.yaml
 - pieces/write_ForwardIterator.yaml
 - pieces/write_Int.yaml
 - pieces/write_Pointer.yaml

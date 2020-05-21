@@ -4,7 +4,8 @@ writeInt:
     template<typename Sink>
     void Write(Sink& S, int Value, std::vector<char>& Buffer);
   header: write_Int.hpp
+  source: write_Int.cpp
   license: ../License.txt
+  requires: writeScalarType
   includes:
-  - "#include <cstdio>"
   - "#include <vector>"
