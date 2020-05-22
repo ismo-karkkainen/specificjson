@@ -14,7 +14,14 @@
 - pieces/write_Float.yaml
 - pieces/write_ScalarType.yaml
 - pieces/write_ForwardIterator.yaml
-- pieces/write_Int.yaml
+- pieces/write_Int8.yaml
+- pieces/write_Int16.yaml
+- pieces/write_Int32.yaml
+- pieces/write_Int64.yaml
+- pieces/write_UInt8.yaml
+- pieces/write_UInt16.yaml
+- pieces/write_UInt32.yaml
+- pieces/write_UInt64.yaml
 - pieces/write_Pointer.yaml
 - pieces/write_StdVector.yaml
 - pieces/write_String.yaml

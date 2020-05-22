@@ -9,6 +9,8 @@
 #include <doctest/doctest.h>
 #include "specificjsontest.hpp"
 #include <sstream>
+#include <cstdint>
+#include <cinttypes>
 
 using namespace specjson;
 
@@ -43,6 +45,105 @@ TEST_CASE("Write numbers") {
     SUBCASE("-Inf") {
         std::basic_stringstream<char> s;
         REQUIRE_THROWS_AS(Write(s, -1.0f / 0.0f, buf), Exception);
+    }
+}
+
+static char value_buffer[] = "012345678901234567890123456789";
+template<typename T>
+static const char* as_string(const T Value) {
+    if constexpr (0 < T(0) - T(1)) {
+        snprintf(value_buffer, 31, "%" PRIuLEAST64, static_cast<std::uint_least64_t>(Value));
+    } else {
+        snprintf(value_buffer, 31, "%" PRIiLEAST64, static_cast<std::int_least64_t>(Value));
+    }
+    return value_buffer;
+}
+
+TEST_CASE("Write (u)int8") {
+    std::vector<char> buf;
+    SUBCASE("INT8_MIN") {
+        std::basic_stringstream<char> s;
+        std::int8_t v(INT8_MIN);
+        Write(s, v, buf);
+        REQUIRE(s.str() == as_string(std::int8_t(INT8_MIN)));
+    }
+    SUBCASE("INT8_MAX") {
+        std::basic_stringstream<char> s;
+        std::int8_t v(INT8_MAX);
+        Write(s, v, buf);
+        REQUIRE(s.str() == as_string(std::int8_t(INT8_MAX)));
+    }
+    SUBCASE("UINT8_MAX") {
+        std::basic_stringstream<char> s;
+        std::uint8_t v(UINT8_MAX);
+        Write(s, v, buf);
+        REQUIRE(s.str() == as_string(std::uint8_t(UINT8_MAX)));
+    }
+}
+
+TEST_CASE("Write (u)int16") {
+    std::vector<char> buf;
+    SUBCASE("INT16_MIN") {
+        std::basic_stringstream<char> s;
+        std::int16_t v(INT16_MIN);
+        Write(s, v, buf);
+        REQUIRE(s.str() == as_string(std::int16_t(INT16_MIN)));
+    }
+    SUBCASE("INT16_MAX") {
+        std::basic_stringstream<char> s;
+        std::int16_t v(INT16_MAX);
+        Write(s, v, buf);
+        REQUIRE(s.str() == as_string(std::int16_t(INT16_MAX)));
+    }
+    SUBCASE("UINT16_MAX") {
+        std::basic_stringstream<char> s;
+        std::uint16_t v(UINT16_MAX);
+        Write(s, v, buf);
+        REQUIRE(s.str() == as_string(std::uint16_t(UINT16_MAX)));
+    }
+}
+
+TEST_CASE("Write (u)int32") {
+    std::vector<char> buf;
+    SUBCASE("INT32_MIN") {
+        std::basic_stringstream<char> s;
+        std::int32_t v(INT32_MIN);
+        Write(s, v, buf);
+        REQUIRE(s.str() == as_string(std::int32_t(INT32_MIN)));
+    }
+    SUBCASE("INT32_MAX") {
+        std::basic_stringstream<char> s;
+        std::int32_t v(INT32_MAX);
+        Write(s, v, buf);
+        REQUIRE(s.str() == as_string(std::int32_t(INT32_MAX)));
+    }
+    SUBCASE("UINT32_MAX") {
+        std::basic_stringstream<char> s;
+        std::uint32_t v(UINT32_MAX);
+        Write(s, v, buf);
+        REQUIRE(s.str() == as_string(std::uint32_t(UINT32_MAX)));
+    }
+}
+
+TEST_CASE("Write (u)int64") {
+    std::vector<char> buf;
+    SUBCASE("INT64_MIN") {
+        std::basic_stringstream<char> s;
+        std::int64_t v(INT64_MIN);
+        Write(s, v, buf);
+        REQUIRE(s.str() == as_string(std::int64_t(INT64_MIN)));
+    }
+    SUBCASE("INT64_MAX") {
+        std::basic_stringstream<char> s;
+        std::int64_t v(INT64_MAX);
+        Write(s, v, buf);
+        REQUIRE(s.str() == as_string(std::int64_t(INT64_MAX)));
+    }
+    SUBCASE("UINT64_MAX") {
+        std::basic_stringstream<char> s;
+        std::uint64_t v(UINT64_MAX);
+        Write(s, v, buf);
+        REQUIRE(s.str() == as_string(std::uint64_t(UINT64_MAX)));
     }
 }
 

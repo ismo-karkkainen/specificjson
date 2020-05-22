@@ -1,0 +1,14 @@
+writeUInt64:
+  writer: true
+  declaration: |
+    template<typename Sink>
+    void Write(Sink& S, std::uint64_t Value, std::vector<char>& Buffer);
+  header: write_UInt64.hpp
+  source: write_UInt64.cpp
+  license: ../License.txt
+  requires: writeScalarType
+  includes:
+  - "#include <cstdint>"
+  - "#include <vector>"
+  source_includes:
+  - "#include <cinttypes>"

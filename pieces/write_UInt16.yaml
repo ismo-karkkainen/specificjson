@@ -1,0 +1,14 @@
+writeUInt16:
+  writer: true
+  declaration: |
+    template<typename Sink>
+    void Write(Sink& S, std::uint16_t Value, std::vector<char>& Buffer);
+  header: write_UInt16.hpp
+  source: write_UInt16.cpp
+  license: ../License.txt
+  requires: writeScalarType
+  includes:
+  - "#include <cstdint>"
+  - "#include <vector>"
+  source_includes:
+  - "#include <cinttypes>"
