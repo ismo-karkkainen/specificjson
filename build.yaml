@@ -5,11 +5,13 @@
 - pieces/ParserPool.yaml
 - pieces/ValueParser.yaml
 - pieces/read_ContainerStdVector.yaml
+- pieces/read_Bool.yaml
 - pieces/read_Double.yaml
 - pieces/read_Float.yaml
 - pieces/read_Int.yaml
 - pieces/read_StdVector.yaml
 - pieces/read_String.yaml
+- pieces/write_Bool.yaml
 - pieces/write_Double.yaml
 - pieces/write_Float.yaml
 - pieces/write_ScalarType.yaml

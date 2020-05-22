@@ -1,0 +1,9 @@
+writeBool:
+  writer: true
+  declaration: |
+    template<typename Sink>
+    void Write(Sink& S, bool Value, std::vector<char>& Buffer);
+  header: write_Bool.hpp
+  license: ../License.txt
+  includes:
+  - "#include <vector>"

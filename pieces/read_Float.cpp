@@ -1,4 +1,4 @@
-static Exception InvalidFloat("Invalid float.");
+static const Exception InvalidFloat("Invalid float.");
 
 const char* specjson::ParseFloat::Parse(
     const char* Begin, const char* End, ParserPool& Pool) noexcept(false)

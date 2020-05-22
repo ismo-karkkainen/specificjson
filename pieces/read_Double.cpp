@@ -1,4 +1,4 @@
-static Exception InvalidDouble("Invalid double.");
+static const Exception InvalidDouble("Invalid double.");
 
 const char* specjson::ParseDouble::Parse(
     const char* Begin, const char* End, ParserPool& Pool) noexcept(false)

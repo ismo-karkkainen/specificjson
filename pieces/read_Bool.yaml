@@ -1,0 +1,13 @@
+Bool:
+  description: Parses Boolean value into bool.
+  parsername: ParseBool
+  declaration: class ParseBool;
+  pooled: PoolIndex
+  header: read_Bool.hpp
+  source: read_Bool.cpp
+  license: ../License.txt
+  requires:
+    - ValueParser
+    - Exception
+  includes:
+    - "#include <cstdlib>"

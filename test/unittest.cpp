@@ -59,25 +59,39 @@ static const char* as_string(const T Value) {
     return value_buffer;
 }
 
+TEST_CASE("Write bool") {
+    std::vector<char> buf;
+    SUBCASE("false") {
+        std::basic_stringstream<char> s;
+        Write(s, false, buf);
+        REQUIRE(s.str() == "false");
+    }
+    SUBCASE("true") {
+        std::basic_stringstream<char> s;
+        Write(s, true, buf);
+        REQUIRE(s.str() == "true");
+    }
+}
+
 TEST_CASE("Write (u)int8") {
     std::vector<char> buf;
     SUBCASE("INT8_MIN") {
         std::basic_stringstream<char> s;
         std::int8_t v(INT8_MIN);
         Write(s, v, buf);
-        REQUIRE(s.str() == as_string(std::int8_t(INT8_MIN)));
+        REQUIRE(s.str() == as_string(v));
     }
     SUBCASE("INT8_MAX") {
         std::basic_stringstream<char> s;
         std::int8_t v(INT8_MAX);
         Write(s, v, buf);
-        REQUIRE(s.str() == as_string(std::int8_t(INT8_MAX)));
+        REQUIRE(s.str() == as_string(v));
     }
     SUBCASE("UINT8_MAX") {
         std::basic_stringstream<char> s;
         std::uint8_t v(UINT8_MAX);
         Write(s, v, buf);
-        REQUIRE(s.str() == as_string(std::uint8_t(UINT8_MAX)));
+        REQUIRE(s.str() == as_string(v));
     }
 }
 
@@ -87,19 +101,19 @@ TEST_CASE("Write (u)int16") {
         std::basic_stringstream<char> s;
         std::int16_t v(INT16_MIN);
         Write(s, v, buf);
-        REQUIRE(s.str() == as_string(std::int16_t(INT16_MIN)));
+        REQUIRE(s.str() == as_string(v));
     }
     SUBCASE("INT16_MAX") {
         std::basic_stringstream<char> s;
         std::int16_t v(INT16_MAX);
         Write(s, v, buf);
-        REQUIRE(s.str() == as_string(std::int16_t(INT16_MAX)));
+        REQUIRE(s.str() == as_string(v));
     }
     SUBCASE("UINT16_MAX") {
         std::basic_stringstream<char> s;
         std::uint16_t v(UINT16_MAX);
         Write(s, v, buf);
-        REQUIRE(s.str() == as_string(std::uint16_t(UINT16_MAX)));
+        REQUIRE(s.str() == as_string(v));
     }
 }
 
@@ -109,19 +123,19 @@ TEST_CASE("Write (u)int32") {
         std::basic_stringstream<char> s;
         std::int32_t v(INT32_MIN);
         Write(s, v, buf);
-        REQUIRE(s.str() == as_string(std::int32_t(INT32_MIN)));
+        REQUIRE(s.str() == as_string(v));
     }
     SUBCASE("INT32_MAX") {
         std::basic_stringstream<char> s;
         std::int32_t v(INT32_MAX);
         Write(s, v, buf);
-        REQUIRE(s.str() == as_string(std::int32_t(INT32_MAX)));
+        REQUIRE(s.str() == as_string(v));
     }
     SUBCASE("UINT32_MAX") {
         std::basic_stringstream<char> s;
         std::uint32_t v(UINT32_MAX);
         Write(s, v, buf);
-        REQUIRE(s.str() == as_string(std::uint32_t(UINT32_MAX)));
+        REQUIRE(s.str() == as_string(v));
     }
 }
 
@@ -131,19 +145,136 @@ TEST_CASE("Write (u)int64") {
         std::basic_stringstream<char> s;
         std::int64_t v(INT64_MIN);
         Write(s, v, buf);
-        REQUIRE(s.str() == as_string(std::int64_t(INT64_MIN)));
+        REQUIRE(s.str() == as_string(v));
     }
     SUBCASE("INT64_MAX") {
         std::basic_stringstream<char> s;
         std::int64_t v(INT64_MAX);
         Write(s, v, buf);
-        REQUIRE(s.str() == as_string(std::int64_t(INT64_MAX)));
+        REQUIRE(s.str() == as_string(v));
     }
     SUBCASE("UINT64_MAX") {
         std::basic_stringstream<char> s;
         std::uint64_t v(UINT64_MAX);
         Write(s, v, buf);
-        REQUIRE(s.str() == as_string(std::uint64_t(UINT64_MAX)));
+        REQUIRE(s.str() == as_string(v));
+    }
+}
+
+TEST_CASE("Write (u)char") {
+    std::vector<char> buf;
+    SUBCASE("MIN") {
+        std::basic_stringstream<char> s;
+        char v(std::numeric_limits<char>::min());
+        Write(s, v, buf);
+        REQUIRE(s.str() == as_string(v));
+    }
+    SUBCASE("MAX") {
+        std::basic_stringstream<char> s;
+        char v(std::numeric_limits<char>::max());
+        Write(s, v, buf);
+        REQUIRE(s.str() == as_string(v));
+    }
+    SUBCASE("UMAX") {
+        std::basic_stringstream<char> s;
+        unsigned char v(std::numeric_limits<unsigned char>::max());
+        Write(s, v, buf);
+        REQUIRE(s.str() == as_string(v));
+    }
+}
+
+TEST_CASE("Write (u)short") {
+    std::vector<char> buf;
+    SUBCASE("MIN") {
+        std::basic_stringstream<char> s;
+        short v(std::numeric_limits<short>::min());
+        Write(s, v, buf);
+        REQUIRE(s.str() == as_string(v));
+    }
+    SUBCASE("MAX") {
+        std::basic_stringstream<char> s;
+        short v(std::numeric_limits<short>::max());
+        Write(s, v, buf);
+        REQUIRE(s.str() == as_string(v));
+    }
+    SUBCASE("UMAX") {
+        std::basic_stringstream<char> s;
+        unsigned short v(std::numeric_limits<unsigned short>::max());
+        Write(s, v, buf);
+        REQUIRE(s.str() == as_string(v));
+    }
+}
+
+TEST_CASE("Write (u)int") {
+    std::vector<char> buf;
+    SUBCASE("MIN") {
+        std::basic_stringstream<char> s;
+        int v(std::numeric_limits<int>::min());
+        Write(s, v, buf);
+        REQUIRE(s.str() == as_string(v));
+    }
+    SUBCASE("MAX") {
+        std::basic_stringstream<char> s;
+        int v(std::numeric_limits<int>::max());
+        Write(s, v, buf);
+        REQUIRE(s.str() == as_string(v));
+    }
+    SUBCASE("UMAX") {
+        std::basic_stringstream<char> s;
+        unsigned int v(std::numeric_limits<unsigned int>::max());
+        Write(s, v, buf);
+        REQUIRE(s.str() == as_string(v));
+    }
+}
+
+/*
+If specific size integer typedefs do not use long, these fail.
+Only consequence now is you cannot use (unsigned) long directly.
+I imagine now you mostly either use int for generic case or std::(u)intN_t.
+For old code, int may have been 16 or 32 bits and long was used to get 32 bits.
+
+TEST_CASE("Write (u)long") {
+    std::vector<char> buf;
+    SUBCASE("MIN") {
+        std::basic_stringstream<char> s;
+        long v(std::numeric_limits<long>::min());
+        Write(s, v, buf);
+        REQUIRE(s.str() == as_string(v));
+    }
+    SUBCASE("MAX") {
+        std::basic_stringstream<char> s;
+        long v(std::numeric_limits<long>::max());
+        Write(s, v, buf);
+        REQUIRE(s.str() == as_string(v));
+    }
+    SUBCASE("UMAX") {
+        std::basic_stringstream<char> s;
+        unsigned long v(std::numeric_limits<unsigned long>::max());
+        Write(s, v, buf);
+        REQUIRE(s.str() == as_string(v));
+    }
+}
+*/
+
+TEST_CASE("Write (u)long long") {
+    std::vector<char> buf;
+    SUBCASE("MIN") {
+        std::basic_stringstream<char> s;
+        long long v(std::numeric_limits<long long>::min());
+        Write(s, v, buf);
+        REQUIRE(s.str() == as_string(v));
+    }
+    SUBCASE("MAX") {
+        std::basic_stringstream<char> s;
+        long long v(std::numeric_limits<long long>::max());
+        Write(s, v, buf);
+        REQUIRE(s.str() == as_string(v));
+    }
+    SUBCASE("UMAX") {
+        std::basic_stringstream<char> s;
+        unsigned long long v(std::numeric_limits<unsigned long long>::max());
+        Write(s, v, buf);
+        REQUIRE(s.str() == as_string(v));
     }
 }
 
@@ -438,6 +569,172 @@ TEST_CASE("Floats") {
     SUBCASE("0x1p3") {
         pp.buffer.resize(0);
         std::string s("0x1p3");
+        REQUIRE_THROWS_AS(parser.Parse(s.c_str(), s.c_str() + s.size(), pp), Exception);
+    }
+}
+
+TEST_CASE("Booleans") {
+    ParserPool pp;
+    bool& out(std::get<ParserPool::Bool>(pp.Value));
+    ParseBool& parser(std::get<ParserPool::Bool>(pp.Parser));
+    SUBCASE("true") {
+        pp.buffer.resize(0);
+        std::string s("true");
+        REQUIRE(parser.Parse(s.c_str(), s.c_str() + s.size(), pp) == s.c_str() + s.size());
+        REQUIRE(out == true);
+    }
+    SUBCASE("false") {
+        pp.buffer.resize(0);
+        std::string s("false");
+        REQUIRE(parser.Parse(s.c_str(), s.c_str() + s.size(), pp) == s.c_str() + s.size());
+        REQUIRE(out == false);
+    }
+    SUBCASE("truegarbage") {
+        pp.buffer.resize(0);
+        std::string s("truegarbage");
+        REQUIRE(parser.Parse(s.c_str(), s.c_str() + s.size(), pp) == s.c_str() + 4);
+        REQUIRE(out == true);
+    }
+    SUBCASE("falsegarbage") {
+        pp.buffer.resize(0);
+        std::string s("falsegarbage");
+        REQUIRE(parser.Parse(s.c_str(), s.c_str() + s.size(), pp) == s.c_str() + 5);
+        REQUIRE(out == false);
+    }
+    SUBCASE("empty") {
+        pp.buffer.resize(0);
+        std::string s;
+        REQUIRE(parser.Parse(s.c_str(), s.c_str() + s.size(), pp) == nullptr);
+    }
+    SUBCASE("t|rue") {
+        pp.buffer.resize(0);
+        std::string s0("t");
+        std::string s("rue");
+        REQUIRE(parser.Parse(s0.c_str(), s0.c_str() + s0.size(), pp) == nullptr);
+        REQUIRE(parser.Parse(s.c_str(), s.c_str() + s.size(), pp) == s.c_str() + s.size());
+        REQUIRE(out == true);
+    }
+    SUBCASE("tr|ue") {
+        pp.buffer.resize(0);
+        std::string s0("tr");
+        std::string s("ue");
+        REQUIRE(parser.Parse(s0.c_str(), s0.c_str() + s0.size(), pp) == nullptr);
+        REQUIRE(parser.Parse(s.c_str(), s.c_str() + s.size(), pp) == s.c_str() + s.size());
+        REQUIRE(out == true);
+    }
+    SUBCASE("tru|e") {
+        pp.buffer.resize(0);
+        std::string s0("tru");
+        std::string s("e");
+        REQUIRE(parser.Parse(s0.c_str(), s0.c_str() + s0.size(), pp) == nullptr);
+        REQUIRE(parser.Parse(s.c_str(), s.c_str() + s.size(), pp) == s.c_str() + s.size());
+        REQUIRE(out == true);
+    }
+    SUBCASE("f|alse") {
+        pp.buffer.resize(0);
+        std::string s0("f");
+        std::string s("alse");
+        REQUIRE(parser.Parse(s0.c_str(), s0.c_str() + s0.size(), pp) == nullptr);
+        REQUIRE(parser.Parse(s.c_str(), s.c_str() + s.size(), pp) == s.c_str() + s.size());
+        REQUIRE(out == false);
+    }
+    SUBCASE("fa|lse") {
+        pp.buffer.resize(0);
+        std::string s0("fa");
+        std::string s("lse");
+        REQUIRE(parser.Parse(s0.c_str(), s0.c_str() + s0.size(), pp) == nullptr);
+        REQUIRE(parser.Parse(s.c_str(), s.c_str() + s.size(), pp) == s.c_str() + s.size());
+        REQUIRE(out == false);
+    }
+    SUBCASE("fal|se") {
+        pp.buffer.resize(0);
+        std::string s0("fal");
+        std::string s("se");
+        REQUIRE(parser.Parse(s0.c_str(), s0.c_str() + s0.size(), pp) == nullptr);
+        REQUIRE(parser.Parse(s.c_str(), s.c_str() + s.size(), pp) == s.c_str() + s.size());
+        REQUIRE(out == false);
+    }
+    SUBCASE("fals|e") {
+        pp.buffer.resize(0);
+        std::string s0("fals");
+        std::string s("e");
+        REQUIRE(parser.Parse(s0.c_str(), s0.c_str() + s0.size(), pp) == nullptr);
+        REQUIRE(parser.Parse(s.c_str(), s.c_str() + s.size(), pp) == s.c_str() + s.size());
+        REQUIRE(out == false);
+    }
+}
+
+TEST_CASE("Invalid Booleans") {
+    ParserPool pp;
+    ParseBool& parser(std::get<ParserPool::Bool>(pp.Parser));
+    SUBCASE("invalid") {
+        pp.buffer.resize(0);
+        std::string s("invalid");
+        REQUIRE_THROWS_AS(parser.Parse(s.c_str(), s.c_str() + s.size(), pp), Exception);
+    }
+    SUBCASE("tinvalid") {
+        pp.buffer.resize(0);
+        std::string s("tinvalid");
+        REQUIRE_THROWS_AS(parser.Parse(s.c_str(), s.c_str() + s.size(), pp), Exception);
+    }
+    SUBCASE("talse") {
+        pp.buffer.resize(0);
+        std::string s("talse");
+        REQUIRE_THROWS_AS(parser.Parse(s.c_str(), s.c_str() + s.size(), pp), Exception);
+    }
+    SUBCASE("trinvalid") {
+        pp.buffer.resize(0);
+        std::string s("trinvalid");
+        REQUIRE_THROWS_AS(parser.Parse(s.c_str(), s.c_str() + s.size(), pp), Exception);
+    }
+    SUBCASE("trlse") {
+        pp.buffer.resize(0);
+        std::string s("trlse");
+        REQUIRE_THROWS_AS(parser.Parse(s.c_str(), s.c_str() + s.size(), pp), Exception);
+    }
+    SUBCASE("truinvalid") {
+        pp.buffer.resize(0);
+        std::string s("truinvalid");
+        REQUIRE_THROWS_AS(parser.Parse(s.c_str(), s.c_str() + s.size(), pp), Exception);
+    }
+    SUBCASE("truse") {
+        pp.buffer.resize(0);
+        std::string s("truse");
+        REQUIRE_THROWS_AS(parser.Parse(s.c_str(), s.c_str() + s.size(), pp), Exception);
+    }
+    SUBCASE("finvalid") {
+        pp.buffer.resize(0);
+        std::string s("finvalid");
+        REQUIRE_THROWS_AS(parser.Parse(s.c_str(), s.c_str() + s.size(), pp), Exception);
+    }
+    SUBCASE("fruee") {
+        pp.buffer.resize(0);
+        std::string s("fruee");
+        REQUIRE_THROWS_AS(parser.Parse(s.c_str(), s.c_str() + s.size(), pp), Exception);
+    }
+    SUBCASE("fainvalid") {
+        pp.buffer.resize(0);
+        std::string s("fainvalid");
+        REQUIRE_THROWS_AS(parser.Parse(s.c_str(), s.c_str() + s.size(), pp), Exception);
+    }
+    SUBCASE("fauee") {
+        pp.buffer.resize(0);
+        std::string s("fauee");
+        REQUIRE_THROWS_AS(parser.Parse(s.c_str(), s.c_str() + s.size(), pp), Exception);
+    }
+    SUBCASE("falinvalid") {
+        pp.buffer.resize(0);
+        std::string s("falinvalid");
+        REQUIRE_THROWS_AS(parser.Parse(s.c_str(), s.c_str() + s.size(), pp), Exception);
+    }
+    SUBCASE("falee") {
+        pp.buffer.resize(0);
+        std::string s("falee");
+        REQUIRE_THROWS_AS(parser.Parse(s.c_str(), s.c_str() + s.size(), pp), Exception);
+    }
+    SUBCASE("falsinvalid") {
+        pp.buffer.resize(0);
+        std::string s("falsinvalid");
         REQUIRE_THROWS_AS(parser.Parse(s.c_str(), s.c_str() + s.size(), pp), Exception);
     }
 }

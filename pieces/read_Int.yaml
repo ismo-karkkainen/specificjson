@@ -7,7 +7,7 @@ Int:
   source: read_Int.cpp
   license: ../License.txt
   requires:
-    - ValueParser
-    - Exception
-  includes:
-    - "#include <cstdlib>"
+  - ValueParser
+  - Exception
+  source_includes:
+  - "#include <cstdlib>"

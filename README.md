@@ -77,6 +77,12 @@ is the expression and Value refers to the object that is being written.
 Likewise "Value.accessor" is used as parameter to Write where accessor is the
 given expression. If you use the template, then this is the member name.
 
+Integer types std::(u)intN_t where N is 8, 16, 32, or 64 cover the fundamental
+types that are used in typedefs in the cstdint header. Hence int most likely
+works but long might not. I am making the assumption that if you do not in
+particular care about the sizes, you use int and otherwise pick a type that
+has the needed number of bits.
+
 ## Limitations
 
 Input is expected to be a JSON object. If you have an array or scalar, you have

@@ -1,7 +1,7 @@
-static Exception StringStart("Expected '\"'.");
-static Exception StringEscape("String with unknown escape.");
-static Exception StringHexDigits("String with invalid hex digits.");
-static Exception StringInvalidCharacter("String with invalid character.");
+static const Exception StringStart("Expected '\"'.");
+static const Exception StringEscape("String with unknown escape.");
+static const Exception StringHexDigits("String with invalid hex digits.");
+static const Exception StringInvalidCharacter("String with invalid character.");
 
 const char* specjson::ParseString::Parse(
     const char* Begin, const char* End, ParserPool& Pool) noexcept(false)
