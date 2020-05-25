@@ -881,8 +881,8 @@ TEST_CASE("String Unicode") {
 
 TEST_CASE("Integer") {
     ParserPool pp;
-    int& out(std::get<ParserPool::Int>(pp.Value));
-    ParseInt& parser(std::get<ParserPool::Int>(pp.Parser));
+    int& out(std::get<ParserPool::Int32>(pp.Value));
+    ParseInt32& parser(std::get<ParserPool::Int32>(pp.Parser));
     SUBCASE("123") {
         pp.buffer.resize(0);
         std::string s("123 ");
@@ -969,6 +969,258 @@ TEST_CASE("Integer") {
         std::string s0("123");
         std::string s("-456 ");
         REQUIRE(parser.Parse(s0.c_str(), s0.c_str() + s0.size(), pp) == nullptr);
+        REQUIRE_THROWS_AS(parser.Parse(s.c_str(), s.c_str() + s.size(), pp), Exception);
+    }
+}
+
+template<typename T>
+static std::string string_space(const T Value) {
+    if constexpr (0 < T(0) - T(1))
+        snprintf(value_buffer, 31, "%" PRIuLEAST64 " ", static_cast<std::uint_least64_t>(Value));
+    else
+        snprintf(value_buffer, 31, "%" PRIiLEAST64 " ", static_cast<std::int_least64_t>(Value));
+    return std::string(value_buffer);
+}
+
+TEST_CASE("Int8") {
+    ParserPool pp;
+    ParseInt8& parser(std::get<ParserPool::Int8>(pp.Parser));
+    ParseInt8::Type& out(std::get<ParserPool::Int8>(pp.Value));
+    SUBCASE("Minimum") {
+        pp.buffer.resize(0);
+        std::int64_t v(std::numeric_limits<ParseInt8::Type>::lowest());
+        std::string s(string_space(v));
+        REQUIRE(parser.Parse(s.c_str(), s.c_str() + s.size(), pp) == s.c_str() + s.size() - 1);
+        REQUIRE(out == v);
+    }
+    SUBCASE("Maximum") {
+        pp.buffer.resize(0);
+        std::int64_t v(std::numeric_limits<ParseInt8::Type>::max());
+        std::string s(string_space(v));
+        REQUIRE(parser.Parse(s.c_str(), s.c_str() + s.size(), pp) == s.c_str() + s.size() - 1);
+        REQUIRE(out == v);
+    }
+    SUBCASE("Minimum - 1") {
+        pp.buffer.resize(0);
+        std::int64_t v(std::numeric_limits<ParseInt8::Type>::lowest());
+        std::string s(string_space(v - 1));
+        REQUIRE_THROWS_AS(parser.Parse(s.c_str(), s.c_str() + s.size(), pp), Exception);
+    }
+    SUBCASE("Maximum + 1") {
+        pp.buffer.resize(0);
+        std::int64_t v(std::numeric_limits<ParseInt8::Type>::max());
+        std::string s(string_space(v + 1));
+        REQUIRE_THROWS_AS(parser.Parse(s.c_str(), s.c_str() + s.size(), pp), Exception);
+    }
+}
+
+TEST_CASE("Int16") {
+    ParserPool pp;
+    ParseInt16& parser(std::get<ParserPool::Int16>(pp.Parser));
+    ParseInt16::Type& out(std::get<ParserPool::Int16>(pp.Value));
+    SUBCASE("Minimum") {
+        pp.buffer.resize(0);
+        std::int64_t v(std::numeric_limits<ParseInt16::Type>::lowest());
+        std::string s(string_space(v));
+        REQUIRE(parser.Parse(s.c_str(), s.c_str() + s.size(), pp) == s.c_str() + s.size() - 1);
+        REQUIRE(out == v);
+    }
+    SUBCASE("Maximum") {
+        pp.buffer.resize(0);
+        std::int64_t v(std::numeric_limits<ParseInt16::Type>::max());
+        std::string s(string_space(v));
+        REQUIRE(parser.Parse(s.c_str(), s.c_str() + s.size(), pp) == s.c_str() + s.size() - 1);
+        REQUIRE(out == v);
+    }
+    SUBCASE("Minimum - 1") {
+        pp.buffer.resize(0);
+        std::int64_t v(std::numeric_limits<ParseInt16::Type>::lowest());
+        std::string s(string_space(v - 1));
+        REQUIRE_THROWS_AS(parser.Parse(s.c_str(), s.c_str() + s.size(), pp), Exception);
+    }
+    SUBCASE("Maximum + 1") {
+        pp.buffer.resize(0);
+        std::int64_t v(std::numeric_limits<ParseInt16::Type>::max());
+        std::string s(string_space(v + 1));
+        REQUIRE_THROWS_AS(parser.Parse(s.c_str(), s.c_str() + s.size(), pp), Exception);
+    }
+}
+
+TEST_CASE("Int32") {
+    ParserPool pp;
+    ParseInt32& parser(std::get<ParserPool::Int32>(pp.Parser));
+    ParseInt32::Type& out(std::get<ParserPool::Int32>(pp.Value));
+    SUBCASE("Minimum") {
+        pp.buffer.resize(0);
+        std::int64_t v(std::numeric_limits<ParseInt32::Type>::lowest());
+        std::string s(string_space(v));
+        REQUIRE(parser.Parse(s.c_str(), s.c_str() + s.size(), pp) == s.c_str() + s.size() - 1);
+        REQUIRE(out == v);
+    }
+    SUBCASE("Maximum") {
+        pp.buffer.resize(0);
+        std::int64_t v(std::numeric_limits<ParseInt32::Type>::max());
+        std::string s(string_space(v));
+        REQUIRE(parser.Parse(s.c_str(), s.c_str() + s.size(), pp) == s.c_str() + s.size() - 1);
+        REQUIRE(out == v);
+    }
+    SUBCASE("Minimum - 1") {
+        pp.buffer.resize(0);
+        std::int64_t v(std::numeric_limits<ParseInt32::Type>::lowest());
+        std::string s(string_space(v - 1));
+        REQUIRE_THROWS_AS(parser.Parse(s.c_str(), s.c_str() + s.size(), pp), Exception);
+    }
+    SUBCASE("Maximum + 1") {
+        pp.buffer.resize(0);
+        std::int64_t v(std::numeric_limits<ParseInt32::Type>::max());
+        std::string s(string_space(v + 1));
+        REQUIRE_THROWS_AS(parser.Parse(s.c_str(), s.c_str() + s.size(), pp), Exception);
+    }
+}
+
+TEST_CASE("Int64") {
+    ParserPool pp;
+    ParseInt64& parser(std::get<ParserPool::Int64>(pp.Parser));
+    ParseInt64::Type& out(std::get<ParserPool::Int64>(pp.Value));
+    SUBCASE("Minimum") {
+        pp.buffer.resize(0);
+        std::int64_t v(std::numeric_limits<ParseInt64::Type>::lowest());
+        std::string s(string_space(v));
+        REQUIRE(parser.Parse(s.c_str(), s.c_str() + s.size(), pp) == s.c_str() + s.size() - 1);
+        REQUIRE(out == v);
+    }
+    SUBCASE("Maximum") {
+        pp.buffer.resize(0);
+        std::int64_t v(std::numeric_limits<ParseInt64::Type>::max());
+        std::string s(string_space(v));
+        REQUIRE(parser.Parse(s.c_str(), s.c_str() + s.size(), pp) == s.c_str() + s.size() - 1);
+        REQUIRE(out == v);
+    }
+    SUBCASE("Minimum - 1") {
+        pp.buffer.resize(0);
+        std::uint64_t v(std::numeric_limits<ParseInt64::Type>::max());
+        std::string s(string_space(v + 2));
+        s = "-" + s;
+        REQUIRE_THROWS_AS(parser.Parse(s.c_str(), s.c_str() + s.size(), pp), Exception);
+    }
+    SUBCASE("Maximum + 1") {
+        pp.buffer.resize(0);
+        std::uint64_t v(std::numeric_limits<ParseInt64::Type>::max());
+        std::string s(string_space(v + 1));
+        REQUIRE_THROWS_AS(parser.Parse(s.c_str(), s.c_str() + s.size(), pp), Exception);
+    }
+}
+
+TEST_CASE("UInt8") {
+    ParserPool pp;
+    ParseUInt8& parser(std::get<ParserPool::UInt8>(pp.Parser));
+    ParseUInt8::Type& out(std::get<ParserPool::UInt8>(pp.Value));
+    SUBCASE("Minimum") {
+        pp.buffer.resize(0);
+        std::string s("0 ");
+        REQUIRE(parser.Parse(s.c_str(), s.c_str() + s.size(), pp) == s.c_str() + s.size() - 1);
+        REQUIRE(out == 0);
+    }
+    SUBCASE("Maximum") {
+        pp.buffer.resize(0);
+        std::uint64_t v(std::numeric_limits<ParseUInt8::Type>::max());
+        std::string s(string_space(v));
+        REQUIRE(parser.Parse(s.c_str(), s.c_str() + s.size(), pp) == s.c_str() + s.size() - 1);
+        REQUIRE(out == v);
+    }
+    SUBCASE("Minimum - 1") {
+        pp.buffer.resize(0);
+        std::string s("-1 ");
+        REQUIRE_THROWS_AS(parser.Parse(s.c_str(), s.c_str() + s.size(), pp), Exception);
+    }
+    SUBCASE("Maximum + 1") {
+        pp.buffer.resize(0);
+        std::uint64_t v(std::numeric_limits<ParseUInt8::Type>::max());
+        std::string s(string_space(v + 1));
+        REQUIRE_THROWS_AS(parser.Parse(s.c_str(), s.c_str() + s.size(), pp), Exception);
+    }
+}
+
+TEST_CASE("UInt16") {
+    ParserPool pp;
+    ParseUInt16& parser(std::get<ParserPool::UInt16>(pp.Parser));
+    ParseUInt16::Type& out(std::get<ParserPool::UInt16>(pp.Value));
+    SUBCASE("Minimum") {
+        pp.buffer.resize(0);
+        std::string s("0 ");
+        REQUIRE(parser.Parse(s.c_str(), s.c_str() + s.size(), pp) == s.c_str() + s.size() - 1);
+        REQUIRE(out == 0);
+    }
+    SUBCASE("Maximum") {
+        pp.buffer.resize(0);
+        std::uint64_t v(std::numeric_limits<ParseUInt16::Type>::max());
+        std::string s(string_space(v));
+        REQUIRE(parser.Parse(s.c_str(), s.c_str() + s.size(), pp) == s.c_str() + s.size() - 1);
+        REQUIRE(out == v);
+    }
+    SUBCASE("Minimum - 1") {
+        pp.buffer.resize(0);
+        std::string s("-1 ");
+        REQUIRE_THROWS_AS(parser.Parse(s.c_str(), s.c_str() + s.size(), pp), Exception);
+    }
+    SUBCASE("Maximum + 1") {
+        pp.buffer.resize(0);
+        std::uint64_t v(std::numeric_limits<ParseUInt16::Type>::max());
+        std::string s(string_space(v + 1));
+        REQUIRE_THROWS_AS(parser.Parse(s.c_str(), s.c_str() + s.size(), pp), Exception);
+    }
+}
+
+TEST_CASE("UInt32") {
+    ParserPool pp;
+    ParseUInt32& parser(std::get<ParserPool::UInt32>(pp.Parser));
+    ParseUInt32::Type& out(std::get<ParserPool::UInt32>(pp.Value));
+    SUBCASE("Minimum") {
+        pp.buffer.resize(0);
+        std::string s("0 ");
+        REQUIRE(parser.Parse(s.c_str(), s.c_str() + s.size(), pp) == s.c_str() + s.size() - 1);
+        REQUIRE(out == 0);
+    }
+    SUBCASE("Maximum") {
+        pp.buffer.resize(0);
+        std::uint64_t v(std::numeric_limits<ParseUInt32::Type>::max());
+        std::string s(string_space(v));
+        REQUIRE(parser.Parse(s.c_str(), s.c_str() + s.size(), pp) == s.c_str() + s.size() - 1);
+        REQUIRE(out == v);
+    }
+    SUBCASE("Minimum - 1") {
+        pp.buffer.resize(0);
+        std::string s("-1 ");
+        REQUIRE_THROWS_AS(parser.Parse(s.c_str(), s.c_str() + s.size(), pp), Exception);
+    }
+    SUBCASE("Maximum + 1") {
+        pp.buffer.resize(0);
+        std::uint64_t v(std::numeric_limits<ParseUInt32::Type>::max());
+        std::string s(string_space(v + 1));
+        REQUIRE_THROWS_AS(parser.Parse(s.c_str(), s.c_str() + s.size(), pp), Exception);
+    }
+}
+
+TEST_CASE("UInt64") {
+    ParserPool pp;
+    ParseUInt64& parser(std::get<ParserPool::UInt64>(pp.Parser));
+    ParseUInt64::Type& out(std::get<ParserPool::UInt64>(pp.Value));
+    SUBCASE("Minimum") {
+        pp.buffer.resize(0);
+        std::string s("0 ");
+        REQUIRE(parser.Parse(s.c_str(), s.c_str() + s.size(), pp) == s.c_str() + s.size() - 1);
+        REQUIRE(out == 0);
+    }
+    SUBCASE("Maximum") {
+        pp.buffer.resize(0);
+        std::uint64_t v(std::numeric_limits<ParseUInt64::Type>::max());
+        std::string s(string_space(v));
+        REQUIRE(parser.Parse(s.c_str(), s.c_str() + s.size(), pp) == s.c_str() + s.size() - 1);
+        REQUIRE(out == v);
+    }
+    SUBCASE("Minimum - 1") {
+        pp.buffer.resize(0);
+        std::string s("-1 ");
         REQUIRE_THROWS_AS(parser.Parse(s.c_str(), s.c_str() + s.size(), pp), Exception);
     }
 }

@@ -1,0 +1,13 @@
+Int16:
+  description: Parses number into 16-bit integer.
+  parsername: ParseInt16
+  declaration: class ParseInt16;
+  pooled: PoolIndex
+  header: read_Int16.hpp
+  source: read_Int16.cpp
+  license: ../License.txt
+  requires:
+  - ValueParser
+  - ParseInteger
+  source_includes:
+  - "#include <limits>"

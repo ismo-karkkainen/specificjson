@@ -384,6 +384,15 @@ def parserpool_substitutions(needed, namespace)
       end
     end
   end
+  $pooledreqs = []
+  $pooled.each do |name|
+    piece = $PIECES[name]
+    piece['all_requires'].each do |p|
+      next if p == name
+      $pooledreqs.push p
+    end
+  end
+  $pooledreqs.uniq!
 end
 
 def licenses(needed)
@@ -420,6 +429,11 @@ def compare_pieces(a, b)
     end
   end
   # Neither requires the other. Keep pools and pooled items before others.
+  if $pooledreqs.include? a['name']
+    return -1 unless $pooledreqs.include? b['name']
+  else
+    return 1 if $pooledreqs.include? b['name']
+  end
   if $pooled.include? a['name']
     return -1 unless $pooled.include? b['name']
   else

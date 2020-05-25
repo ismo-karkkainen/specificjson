@@ -1,0 +1,13 @@
+UInt8:
+  description: Parses number into 8-bit unsigned integer.
+  parsername: ParseUInt8
+  declaration: class ParseUInt8;
+  pooled: PoolIndex
+  header: read_UInt8.hpp
+  source: read_UInt8.cpp
+  license: ../License.txt
+  requires:
+  - ValueParser
+  - ParseInteger
+  source_includes:
+  - "#include <limits>"

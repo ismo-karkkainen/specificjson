@@ -1,0 +1,15 @@
+ParseInteger:
+  external: false
+  declaration: |
+    template<typename T, intmax_t Minimum, uintmax_t Maximum>
+    const char* parse_integer(T& Out, const char* Begin, const char* End, std::vector<char>& Buffer, bool Finished) noexcept(false);
+  header: ParseInteger.hpp
+  source: ParseInteger.cpp
+  license: ../License.txt
+  requires:
+  - Exception
+  includes:
+  - "#include <vector>"
+  - "#include <cstdlib>"
+  - "#include <cinttypes>"
+  - "#include <sys/errno.h>"

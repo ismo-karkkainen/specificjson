@@ -1,6 +1,6 @@
-class ParseInt : public ValueParser {
+class ParseInt64 : public ValueParser {
 public:
-    typedef int Type;
+    typedef std::int64_t Type;
     enum Pool { Index = PoolIndex };
 
     const char* Parse(const char* Begin, const char* End, ParserPool& Pool)

@@ -1,0 +1,13 @@
+UInt64:
+  description: Parses number into 64-bit unsigned integer.
+  parsername: ParseUInt64
+  declaration: class ParseUInt64;
+  pooled: PoolIndex
+  header: read_UInt64.hpp
+  source: read_UInt64.cpp
+  license: ../License.txt
+  requires:
+  - ValueParser
+  - ParseInteger
+  source_includes:
+  - "#include <limits>"

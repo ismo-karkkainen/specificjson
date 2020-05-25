@@ -1,0 +1,13 @@
+UInt16:
+  description: Parses number into 16-bit unsigned integer.
+  parsername: ParseUInt16
+  declaration: class ParseUInt16;
+  pooled: PoolIndex
+  header: read_UInt16.hpp
+  source: read_UInt16.cpp
+  license: ../License.txt
+  requires:
+  - ValueParser
+  - ParseInteger
+  source_includes:
+  - "#include <limits>"
