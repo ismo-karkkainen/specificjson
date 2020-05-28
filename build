@@ -737,6 +737,9 @@ specs.each_pair do |name, spec|
       end
       needed.concat reqs
     end
+    spec['generate'].each_pair do |typename, gen|
+      needed.push('String') if gen['parser']
+    end
     needed.uniq!
   end
   parserpool_substitutions(needed, spec['namespace'])
