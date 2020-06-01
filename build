@@ -677,14 +677,16 @@ void Write(Sink& S, const #{typename}& Value, std::vector<char>& Buffer) {
       lines.push "    if (Value.#{desc['checker']}) {"
       fill = '    '
     end
-    if all_req or prev_req
-      lines.push "#{fill}    c = ',';"
-      lines.push "#{fill}    S.write(&c, 1);"
-    elsif not prev_req.nil?
-      lines.push "#{fill}    if (!separated) {"
-      lines.push "#{fill}        c = ',';"
-      lines.push "#{fill}        S.write(&c, 1);"
-      lines.push "#{fill}    }"
+    if not prev_req.nil?
+      if all_req or prev_req
+        lines.push "#{fill}    c = ',';"
+        lines.push "#{fill}    S.write(&c, 1);"
+      elsif not prev_req.nil?
+        lines.push "#{fill}    if (!separated) {"
+        lines.push "#{fill}        c = ',';"
+        lines.push "#{fill}        S.write(&c, 1);"
+        lines.push "#{fill}    }"
+      end
     end
     lines.push "#{fill}    Write(S, #{typename}_#{field}, Buffer);"
     lines.push "#{fill}    c = ':';"
