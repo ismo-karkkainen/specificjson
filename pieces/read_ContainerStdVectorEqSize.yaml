@@ -1,0 +1,11 @@
+ContainerStdVectorEqSize:
+  description: |
+    Parses an array of containers into std::vector and checks that their sizes
+    are the same.
+  parsername: ParseContainerStdVectorEqSize
+  header: read_ContainerStdVectorEqSize.hpp
+  license: ../License.txt
+  requires:
+    - ParseArrayContainer
+  includes:
+    - "#include <vector>"

@@ -1,6 +1,7 @@
 extern const Exception NotFinished;
 extern const Exception InvalidArrayStart;
 extern const Exception InvalidArraySeparator;
+extern const Exception SubContainerSizeVaries;
 
 template<typename Container, typename Parser, bool Swaps = false>
 class ParseArray : public ValueParser {
@@ -97,7 +98,7 @@ const char* ParseArray<Container,Parser,Swaps>::Parse(
 }
 
 
-template<typename Container, typename Parser>
+template<typename Container, typename Parser, bool SameSize = false>
 class ParseContainerArray : public ValueParser {
 public:
     typedef Container Type;
@@ -121,8 +122,8 @@ public:
 };
 
 
-template<typename Container, typename Parser>
-const char* ParseContainerArray<Container,Parser>::Parse(
+template<typename Container, typename Parser, bool SameSize>
+const char* ParseContainerArray<Container,Parser,SameSize>::Parse(
     const char* Begin, const char* End, ParserPool& Pool) noexcept(false)
 {
     if (!p.Finished()) {
@@ -132,6 +133,10 @@ const char* ParseContainerArray<Container,Parser>::Parse(
             return setFinished(nullptr);
         out.push_back(typename Parser::Type());
         p.Swap(out.back());
+        if constexpr (SameSize) {
+            if (out.front().size() != out.back().size())
+                throw SubContainerSizeVaries;
+        }
         expect_item = false;
     } else if (!began) {
         // Expect '[' on first call.
@@ -167,6 +172,10 @@ const char* ParseContainerArray<Container,Parser>::Parse(
                 return setFinished(nullptr);
             out.push_back(typename Parser::Type());
             p.Swap(out.back());
+            if constexpr (SameSize) {
+                if (out.front().size() != out.back().size())
+                    throw SubContainerSizeVaries;
+            }
             expect_item = false;
         }
         // Comma, maybe surrounded by spaces.
