@@ -290,7 +290,7 @@ const char* ParseObject<KeyValues,Values>::Parse(
             state = ExpectColon;
         case ExpectColon:
             if (*Begin != ':')
-                throw InvalidKeySeparator;
+                throw InvalidValueSeparator;
             state = PreValue;
             if (++Begin == End)
                 return setFinished(nullptr);
@@ -321,7 +321,7 @@ const char* ParseObject<KeyValues,Values>::Parse(
             if (*Begin == '}')
                 return checkPassed(++Begin);
             if (*Begin != ',')
-                throw InvalidValueSeparator;
+                throw InvalidKeySeparator;
             state = PreKey;
             ++Begin;
         }
