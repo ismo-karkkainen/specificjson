@@ -1249,7 +1249,7 @@ TEST_CASE("Float array") {
         out.resize(0);
         pp.buffer.resize(0);
         ParseArray<std::vector<ParseFloat::Type>,ParseFloat> parser;
-        std::string s("[ 1 ]");
+        std::string s("[\x9 1\xA\xD]");
         REQUIRE(parser.Parse(s.c_str(), s.c_str() + s.size(), pp) == s.c_str() + s.size());
         parser.Swap(out);
         REQUIRE(out.size() == 1);
@@ -1668,6 +1668,14 @@ TEST_CASE("Object") {
         REQUIRE(parser.Parse(s.c_str(), s.c_str() + s.size(), pp) == s.c_str() + s.size());
         REQUIRE(parser.Finished() == true);
     }
+    SUBCASE("{|}") {
+        ParseObject<KeyValues<KeyValue<name, ParseFloat>>,NamelessValues<Value<ParseFloat>>> parser;
+        std::string s0("{");
+        std::string s("}");
+        REQUIRE(parser.Parse(s0.c_str(), s0.c_str() + s0.size(), pp) == nullptr);
+        REQUIRE(parser.Parse(s.c_str(), s.c_str() + s.size(), pp) == s.c_str() + s.size());
+        REQUIRE(parser.Finished() == true);
+    }
     SUBCASE("Required field {}") {
         ParseObject<KeyValues<RequiredKeyValue<name, ParseFloat>>,NamelessValues<Value<ParseFloat>>> parser;
         std::string s("{}");
@@ -1676,6 +1684,28 @@ TEST_CASE("Object") {
     SUBCASE("{\"name\":1}") {
         ParseObject<KeyValues<RequiredKeyValue<name, ParseFloat>>,NamelessValues<Value<ParseFloat>>> parser;
         std::string s("{\"name\":1}");
+        REQUIRE(parser.Parse(s.c_str(), s.c_str() + s.size(), pp) == s.c_str() + s.size());
+        REQUIRE(parser.Finished() == true);
+        decltype(parser)::Type out;
+        parser.Swap(out);
+        REQUIRE(std::get<0>(out).value == 1.0f);
+    }
+    SUBCASE("{\"name\":|1}") {
+        ParseObject<KeyValues<RequiredKeyValue<name, ParseFloat>>,NamelessValues<Value<ParseFloat>>> parser;
+        std::string s0("{\"name\":");
+        std::string s("1}");
+        REQUIRE(parser.Parse(s0.c_str(), s0.c_str() + s0.size(), pp) == nullptr);
+        REQUIRE(parser.Parse(s.c_str(), s.c_str() + s.size(), pp) == s.c_str() + s.size());
+        REQUIRE(parser.Finished() == true);
+        decltype(parser)::Type out;
+        parser.Swap(out);
+        REQUIRE(std::get<0>(out).value == 1.0f);
+    }
+    SUBCASE("{\"name\"|:1}") {
+        ParseObject<KeyValues<RequiredKeyValue<name, ParseFloat>>,NamelessValues<Value<ParseFloat>>> parser;
+        std::string s0("{\"name\"");
+        std::string s(":1}");
+        REQUIRE(parser.Parse(s0.c_str(), s0.c_str() + s0.size(), pp) == nullptr);
         REQUIRE(parser.Parse(s.c_str(), s.c_str() + s.size(), pp) == s.c_str() + s.size());
         REQUIRE(parser.Finished() == true);
         decltype(parser)::Type out;
@@ -1717,6 +1747,48 @@ TEST_CASE("Object") {
     SUBCASE("{\"name2\":2,\"name\":1}") {
         ParseObject<KeyValues<RequiredKeyValue<name, ParseFloat>,KeyValue<name2,ParseFloat>>,NamelessValues<Value<ParseFloat>,Value<ParseFloat>>> parser;
         std::string s("{\"name2\":2,\"name\":1}");
+        REQUIRE(parser.Parse(s.c_str(), s.c_str() + s.size(), pp) == s.c_str() + s.size());
+        REQUIRE(parser.Finished() == true);
+        decltype(parser)::Type out;
+        parser.Swap(out);
+        REQUIRE(std::get<0>(out).Given() == true);
+        REQUIRE(std::get<0>(out).value == 1.0f);
+        REQUIRE(std::get<1>(out).Given() == true);
+        REQUIRE(std::get<1>(out).value == 2.0f);
+    }
+    SUBCASE("{\"name2\":2|,\"name\":1}") {
+        ParseObject<KeyValues<RequiredKeyValue<name, ParseFloat>,KeyValue<name2,ParseFloat>>,NamelessValues<Value<ParseFloat>,Value<ParseFloat>>> parser;
+        std::string s0("{\"name2\":2");
+        std::string s(",\"name\":1}");
+        REQUIRE(parser.Parse(s0.c_str(), s0.c_str() + s0.size(), pp) == nullptr);
+        REQUIRE(parser.Parse(s.c_str(), s.c_str() + s.size(), pp) == s.c_str() + s.size());
+        REQUIRE(parser.Finished() == true);
+        decltype(parser)::Type out;
+        parser.Swap(out);
+        REQUIRE(std::get<0>(out).Given() == true);
+        REQUIRE(std::get<0>(out).value == 1.0f);
+        REQUIRE(std::get<1>(out).Given() == true);
+        REQUIRE(std::get<1>(out).value == 2.0f);
+    }
+    SUBCASE("{\"name2\":2,|\"name\":1}") {
+        ParseObject<KeyValues<RequiredKeyValue<name, ParseFloat>,KeyValue<name2,ParseFloat>>,NamelessValues<Value<ParseFloat>,Value<ParseFloat>>> parser;
+        std::string s0("{\"name2\":2,");
+        std::string s("\"name\":1}");
+        REQUIRE(parser.Parse(s0.c_str(), s0.c_str() + s0.size(), pp) == nullptr);
+        REQUIRE(parser.Parse(s.c_str(), s.c_str() + s.size(), pp) == s.c_str() + s.size());
+        REQUIRE(parser.Finished() == true);
+        decltype(parser)::Type out;
+        parser.Swap(out);
+        REQUIRE(std::get<0>(out).Given() == true);
+        REQUIRE(std::get<0>(out).value == 1.0f);
+        REQUIRE(std::get<1>(out).Given() == true);
+        REQUIRE(std::get<1>(out).value == 2.0f);
+    }
+    SUBCASE("{\"name2\":2,\"name\":1|}") {
+        ParseObject<KeyValues<RequiredKeyValue<name, ParseFloat>,KeyValue<name2,ParseFloat>>,NamelessValues<Value<ParseFloat>,Value<ParseFloat>>> parser;
+        std::string s0("{\"name2\":2,\"name\":1");
+        std::string s("}");
+        REQUIRE(parser.Parse(s0.c_str(), s0.c_str() + s0.size(), pp) == nullptr);
         REQUIRE(parser.Parse(s.c_str(), s.c_str() + s.size(), pp) == s.c_str() + s.size());
         REQUIRE(parser.Finished() == true);
         decltype(parser)::Type out;

@@ -1,8 +1,11 @@
 Exception:
   description: Exception class.
-  declaration: class Exception;
+  declaration: |
+    class Exception;
+    class ContextException;
   external: false
   header: Exception.hpp
+  source: Exception.cpp
   license: ../License.txt
-  includes:
-    - "#include <exception>"
+  includes: "#include <exception>"
+  source_includes: "#include <cstring>"

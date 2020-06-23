@@ -257,20 +257,19 @@ template<typename KeyValues, typename Values>
 const char* ParseObject<KeyValues,Values>::Parse(
     const char* Begin, const char* End, ParserPool& Pool) noexcept(false)
 {
+    const char* origin = Begin;
     while (Begin != End) {
         switch (state) {
         case NotStarted:
             // Expect '{' on the first call.
             if (*Begin != '{')
-                throw InvalidObjectStart;
+                throw ContextException(InvalidObjectStart, origin, Begin, End);
             state = PreKey;
             ++Begin;
         case PreKey:
-            if (isWhitespace(*Begin)) {
-                Begin = skipWhitespace(++Begin, End);
-                if (Begin == nullptr)
-                    return setFinished(nullptr);
-            }
+            Begin = skipWhitespace(Begin, End);
+            if (Begin == nullptr || !*Begin)
+                return setFinished(nullptr);
             if (*Begin == '}')
                 return checkPassed(++Begin);
             state = ExpectKey;
@@ -282,24 +281,20 @@ const char* ParseObject<KeyValues,Values>::Parse(
             setActivating(std::get<ParserPool::String>(Pool.Value));
             state = PreColon;
         case PreColon:
-            if (isWhitespace(*Begin)) {
-                Begin = skipWhitespace(++Begin, End);
-                if (Begin == nullptr)
-                    return setFinished(nullptr);
-            }
+            Begin = skipWhitespace(Begin, End);
+            if (Begin == nullptr || !*Begin)
+                return setFinished(nullptr);
             state = ExpectColon;
         case ExpectColon:
             if (*Begin != ':')
-                throw InvalidValueSeparator;
+                throw ContextException(InvalidValueSeparator, origin, Begin, End);
             state = PreValue;
             if (++Begin == End)
                 return setFinished(nullptr);
         case PreValue:
-            if (isWhitespace(*Begin)) {
-                Begin = skipWhitespace(++Begin, End);
-                if (Begin == nullptr)
-                    return setFinished(nullptr);
-            }
+            Begin = skipWhitespace(Begin, End);
+            if (Begin == nullptr || !*Begin)
+                return setFinished(nullptr);
             active = activating;
             activating = -1;
             state = ExpectValue;
@@ -311,17 +306,15 @@ const char* ParseObject<KeyValues,Values>::Parse(
             active = -1;
             state = PreComma;
         case PreComma:
-            if (isWhitespace(*Begin)) {
-                Begin = skipWhitespace(++Begin, End);
-                if (Begin == nullptr)
-                    return setFinished(nullptr);
-            }
+            Begin = skipWhitespace(Begin, End);
+            if (Begin == nullptr || !*Begin)
+                return setFinished(nullptr);
             state = ExpectComma;
         case ExpectComma:
             if (*Begin == '}')
                 return checkPassed(++Begin);
             if (*Begin != ',')
-                throw InvalidKeySeparator;
+                throw ContextException(InvalidKeySeparator, origin, Begin, End);
             state = PreKey;
             ++Begin;
         }

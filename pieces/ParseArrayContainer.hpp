@@ -29,6 +29,7 @@ template<typename Container, typename Parser, bool Swaps>
 const char* ParseArray<Container,Parser,Swaps>::Parse(
     const char* Begin, const char* End, ParserPool& Pool) noexcept(false)
 {
+    const char* origin = Begin;
     Parser& p(std::get<Parser::Pool::Index>(Pool.Parser));
     typename Parser::Type& value(std::get<Parser::Pool::Index>(Pool.Value));
     if (!p.Finished()) {
@@ -45,10 +46,10 @@ const char* ParseArray<Container,Parser,Swaps>::Parse(
     } else if (!began) {
         // Expect '[' on first call.
         if (*Begin != '[')
-            throw InvalidArrayStart;
+            throw ContextException(InvalidArrayStart, origin, Begin, End);
         began = expect_number = true;
         Begin = skipWhitespace(++Begin, End);
-        if (Begin == nullptr)
+        if (Begin == nullptr || !*Begin)
             return setFinished(nullptr);
         if (*Begin == ']') {
             began = false; // In case caller re-uses. Out must be empty.
@@ -56,7 +57,7 @@ const char* ParseArray<Container,Parser,Swaps>::Parse(
         }
     } else if (out.empty()) {
         Begin = skipWhitespace(Begin, End);
-        if (Begin == nullptr)
+        if (Begin == nullptr || !*Begin)
             return setFinished(nullptr);
         if (*Begin == ']') {
             began = false; // In case caller re-uses. Out must be empty.
@@ -65,11 +66,9 @@ const char* ParseArray<Container,Parser,Swaps>::Parse(
     }
     while (Begin != End) {
         if (expect_number) {
-            if (isWhitespace(*Begin)) {
-                Begin = skipWhitespace(++Begin, End);
-                if (Begin == nullptr)
-                    return setFinished(nullptr);
-            }
+            Begin = skipWhitespace(Begin, End);
+            if (Begin == nullptr || !*Begin)
+                return setFinished(nullptr);
             // Now there should be the item to parse.
             Begin = p.Parse(Begin, End, Pool);
             if (Begin == nullptr)
@@ -82,14 +81,14 @@ const char* ParseArray<Container,Parser,Swaps>::Parse(
             ++Begin;
         else {
             Begin = skipWhitespace(Begin, End);
-            if (Begin == nullptr)
+            if (Begin == nullptr || !*Begin)
                 return setFinished(nullptr);
             if (*Begin == ']') {
                 began = false;
                 return setFinished(++Begin);
             }
             if (*Begin != ',')
-                throw InvalidArraySeparator;
+                throw ContextException(InvalidArraySeparator, origin, Begin, End);
             Begin++;
         }
         expect_number = true;
@@ -126,6 +125,7 @@ template<typename Container, typename Parser, bool SameSize>
 const char* ParseContainerArray<Container,Parser,SameSize>::Parse(
     const char* Begin, const char* End, ParserPool& Pool) noexcept(false)
 {
+    const char* origin = Begin;
     if (!p.Finished()) {
         // In the middle of parsing value when buffer ended?
         Begin = p.Parse(Begin, End, Pool);
@@ -141,10 +141,10 @@ const char* ParseContainerArray<Container,Parser,SameSize>::Parse(
     } else if (!began) {
         // Expect '[' on first call.
         if (*Begin != '[')
-            throw InvalidArrayStart;
+            throw ContextException(InvalidArrayStart, origin, Begin, End);
         began = expect_item = true;
         Begin = skipWhitespace(++Begin, End);
-        if (Begin == nullptr)
+        if (Begin == nullptr || !*Begin)
             return setFinished(nullptr);
         if (*Begin == ']') {
             began = false; // In case caller re-uses. Out must be empty.
@@ -152,7 +152,7 @@ const char* ParseContainerArray<Container,Parser,SameSize>::Parse(
         }
     } else if (out.empty()) {
         Begin = skipWhitespace(Begin, End);
-        if (Begin == nullptr)
+        if (Begin == nullptr || !*Begin)
             return setFinished(nullptr);
         if (*Begin == ']') {
             began = false; // In case caller re-uses. Out must be empty.
@@ -161,11 +161,9 @@ const char* ParseContainerArray<Container,Parser,SameSize>::Parse(
     }
     while (Begin != End) {
         if (expect_item) {
-            if (isWhitespace(*Begin)) {
-                Begin = skipWhitespace(++Begin, End);
-                if (Begin == nullptr)
-                    return setFinished(nullptr);
-            }
+            Begin = skipWhitespace(Begin, End);
+            if (Begin == nullptr || !*Begin)
+                return setFinished(nullptr);
             // Now there should be the item to parse.
             Begin = p.Parse(Begin, End, Pool);
             if (Begin == nullptr)
@@ -183,14 +181,14 @@ const char* ParseContainerArray<Container,Parser,SameSize>::Parse(
             ++Begin;
         else {
             Begin = skipWhitespace(Begin, End);
-            if (Begin == nullptr)
+            if (Begin == nullptr || !*Begin)
                 return setFinished(nullptr);
             if (*Begin == ']') {
                 began = false;
                 return setFinished(++Begin);
             }
             if (*Begin != ',')
-                throw InvalidArraySeparator;
+                throw ContextException(InvalidArraySeparator, origin, Begin, End);
             Begin++;
         }
         expect_item = true;

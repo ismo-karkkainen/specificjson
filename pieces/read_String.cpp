@@ -6,11 +6,12 @@ static const Exception StringInvalidCharacter("String with invalid character.");
 const char* specjson::ParseString::Parse(
     const char* Begin, const char* End, ParserPool& Pool) noexcept(false)
 {
+    const char* origin = Begin;
     Type& out(std::get<Pool::Index>(Pool.Value));
     auto& buffer(Pool.buffer);
     if (finished) {
         if (*Begin != '"')
-            throw StringStart;
+            throw ContextException(StringStart, origin, Begin, End);
         std::get<Pool::Index>(Pool.Value).resize(0);
         ++Begin;
     }
@@ -54,7 +55,7 @@ const char* specjson::ParseString::Parse(
                 else if ('A' <= hex_digits[k] && hex_digits[k] <= 'F')
                     m = 10 + hex_digits[k] - 'A';
                 else
-                    throw StringHexDigits;
+                    throw ContextException(StringHexDigits, origin, Begin, End);
                 value = (value << 4) + m;
             }
             if (value < 0x80)
@@ -82,7 +83,7 @@ const char* specjson::ParseString::Parse(
             case 't': buffer.push_back('\t'); break;
             case 'u': state = Unicode; break;
             default:
-                throw StringEscape;
+                throw ContextException(StringEscape, origin, Begin, End);
             }
             ++Begin;
         }
