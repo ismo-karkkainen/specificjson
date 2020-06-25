@@ -8,7 +8,8 @@ const char* specjson::ParseFloat::Parse(
     if (finished) {
         // Assumes LC_NUMERIC is "C" or close enough.
         out = strtof(Begin, &end);
-        if (end != Begin && end != End) {
+        // It is possible the exponent is in next buffer.
+        if (end != Begin && end != End && !(*end == 'e' || *end == 'E')) {
             // Detect hexadecimal significand and exponent, INF, NAN. ","
             // This block is about 6% of parsing time if you tolerate the above.
             while (Begin != end &&

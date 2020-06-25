@@ -510,6 +510,30 @@ TEST_CASE("Floats") {
         REQUIRE(parser.Parse(s.c_str(), s.c_str() + s.size(), pp) == s.c_str() + s.size() - 1);
         REQUIRE(out == -0.9f);
     }
+    SUBCASE("1e-|2") {
+        pp.buffer.resize(0);
+        std::string s0("1e-");
+        std::string s("2 ");
+        REQUIRE(parser.Parse(s0.c_str(), s0.c_str() + s0.size(), pp) == nullptr);
+        REQUIRE(parser.Parse(s.c_str(), s.c_str() + s.size(), pp) == s.c_str() + s.size() - 1);
+        REQUIRE(out == 1e-2f);
+    }
+    SUBCASE("1e|-2") {
+        pp.buffer.resize(0);
+        std::string s0("1e");
+        std::string s("-2 ");
+        REQUIRE(parser.Parse(s0.c_str(), s0.c_str() + s0.size(), pp) == nullptr);
+        REQUIRE(parser.Parse(s.c_str(), s.c_str() + s.size(), pp) == s.c_str() + s.size() - 1);
+        REQUIRE(out == 1e-2f);
+    }
+    SUBCASE("1e-1|0 ") {
+        pp.buffer.resize(0);
+        std::string s0("1e-1");
+        std::string s("0 ");
+        REQUIRE(parser.Parse(s0.c_str(), s0.c_str() + s0.size(), pp) == nullptr);
+        REQUIRE(parser.Parse(s.c_str(), s.c_str() + s.size(), pp) == s.c_str() + s.size() - 1);
+        REQUIRE(out == 1e-10f);
+    }
     SUBCASE("|-0.9") {
         pp.buffer.resize(0);
         std::string s0("");
@@ -563,8 +587,7 @@ TEST_CASE("Floats") {
     SUBCASE("1e3e") {
         pp.buffer.resize(0);
         std::string s("1e3e");
-        REQUIRE(parser.Parse(s.c_str(), s.c_str() + s.size(), pp) == s.c_str() + s.size() - 1);
-        REQUIRE(out == 1e3f);
+        REQUIRE(parser.Parse(s.c_str(), s.c_str() + s.size(), pp) == nullptr);
     }
     SUBCASE("0x1p3") {
         pp.buffer.resize(0);
