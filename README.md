@@ -18,6 +18,24 @@ re-run with clean, import, and build options to produce a new script. If you
 are ok with the provided pieces, you probably want just to import your own
 parsers and writers.
 
+## Build with cmake
+
+You need cmake and compiler for C++17. Assuming a build directory parallel to
+main datalackey directory, you can use:
+
+    cmake -G "Unix Makefiles" -DCMAKE_BUILD_TYPE=DEBUG ../specificjson
+
+To specify the compiler, set for example:
+
+    CXX=clang++
+    CXX=g++
+
+To build, assuming Unix Makefiles:
+
+    make
+    make test
+    sudo make install
+
 ## Build without cmake
 
 If you are ok with not running tests, run:

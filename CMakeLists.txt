@@ -30,11 +30,6 @@ else()
     set(BuildOptions "")
 endif()
 
-if (UNIX AND NOT APPLE)
-    set(THREADS_PREFER_PTHREAD_FLAG ON)
-    find_package(Threads REQUIRED)
-endif()
-
 add_custom_command(OUTPUT specificjson
     COMMENT "Generating specificjson script"
     DEPENDS ${CMAKE_CURRENT_LIST_DIR}/build.yaml ${CMAKE_CURRENT_LIST_DIR}/build
