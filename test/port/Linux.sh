@@ -9,10 +9,9 @@ fi
 
 D=$(grep '^ID=' $F | sed 's/"/ /g' | sed 's/=/ /g' | sed 's/  / /g' | cut -d ' ' -f 2).sh
 
-cd $1
-if [ ! -x test/port/$D ]; then
+if [ ! -x $1/test/port/$D ]; then
     echo "Not supported:"
     cat /etc/os-release
     exit 1
 fi
-test/port/$D "$1"
+$1/test/port/$D "$1"

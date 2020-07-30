@@ -10,3 +10,4 @@ writeString:
   includes:
   - "#include <string>"
   - "#include <vector>"
+  - "#include <cstring>"

@@ -1,4 +1,4 @@
-cmake_minimum_required(VERSION 3.12)
+cmake_minimum_required(VERSION 3.10)
 project(specificjsontest CXX)
 
 # This file is only for building test programs and programs for profiling
@@ -98,7 +98,8 @@ add_dependencies(profile ${Profilers})
 set(Readers profile/BlockQueue.cpp profile/InputChannel.cpp profile/FileDescriptorInput.cpp specificjsontest.cpp)
 
 # Custom target that generates all profiler parsers at the same time.
-list(TRANSFORM Profilers APPEND "_io.hpp" OUTPUT_VARIABLE GenHpp)
+set(GenHpp readfloatarray_io.hpp readfloatarray2_io.hpp readstringarray_io.hpp readintarray_io.hpp)
+#list(TRANSFORM Profilers APPEND "_io.hpp" OUTPUT_VARIABLE GenHpp)
 add_custom_target(generated
     COMMENT "Generating profiler types from profile/profile.md"
     DEPENDS ${CMAKE_CURRENT_LIST_DIR}/profile/profile.md

@@ -254,7 +254,6 @@ TEST_CASE("Write (u)long") {
         REQUIRE(s.str() == as_string(v));
     }
 }
-*/
 
 TEST_CASE("Write (u)long long") {
     std::vector<char> buf;
@@ -277,6 +276,7 @@ TEST_CASE("Write (u)long long") {
         REQUIRE(s.str() == as_string(v));
     }
 }
+*/
 
 TEST_CASE("Write strings") {
     std::vector<char> buf;

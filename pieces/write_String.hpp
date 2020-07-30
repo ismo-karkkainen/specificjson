@@ -45,7 +45,7 @@ void Write(Sink& S, const std::string& Value, std::vector<char>& Buffer) {
 template<typename Sink>
 void Write(Sink& S, const char* Value, std::vector<char>& Buffer) {
     if (Value != nullptr)
-        Write(S, Value, Value + strlen(Value), Buffer);
+        Write(S, Value, Value + std::strlen(Value), Buffer);
     else {
         char null[] = "null";
         S.write(null, 4);
