@@ -1,12 +1,13 @@
 # SpecificJSON
 
 A tool to generate C++ header and source file with templates for parsing and
-writing JSON.
+writing JSON from expected input description in YAML.
 
 # Requirements
 
 For unit tests, you need https://github.com/onqtam/doctest to compile them.
-Install somewhere where `#include <doctest/doctest.h>` works.
+Install somewhere where `#include <doctest/doctest.h>` works. See test/port
+scripts for one option.
 
 # Building the script
 
@@ -23,16 +24,20 @@ parsers and writers.
 You need cmake and compiler for C++17. Assuming a build directory parallel to
 main datalackey directory, you can use:
 
-    cmake -G "Unix Makefiles" -DCMAKE_BUILD_TYPE=DEBUG ../specificjson
+    cmake -G "Unix Makefiles" -DCMAKE_BUILD_TYPE=Release ../specificjson
+
+The build type affects only the test program. Assuming you want to use release
+settings in the project where you use the sources generated using specificjson,
+using release for test is the proper choice.
 
 To specify the compiler, set for example:
 
     CXX=clang++
     CXX=g++
 
-To build, assuming Unix Makefiles:
+To build, test, and install the script, assuming Unix Makefiles:
 
-    make
+    make -j 2
     make test
     sudo make install
 
@@ -49,9 +54,9 @@ Resulting specificjson is the script you can then install or copy where needed.
 Default values for fields and some other information are printed when you run
 the script using the `--document` argument.
 
-The pieces that are built in to the script or imported usinga list file are the
-types that are available for use in format fields. You specify object fields
-and their contents using types in the specification passed via `--input`
+The pieces that are built in to the script or imported using a list file are
+the types that are available for use in format fields. You specify object
+fields and their contents using types in the specification passed via `--input`
 option. The script generates a header and source file with indicated contents.
 
 Include the source file in your C++ program source file list.
@@ -73,6 +78,11 @@ For example std::ostream works.
 For a practical example see https://github.com/ismo-karkkainen/imageio
 README.md file and sources.
 
+If you want to provide your own parsers, you can export the existing ones,
+add your own, list the suitable ones and build a new script by calling the
+existing specificjson with suitable parameters. The way you can obtain a
+version that is specific to the project you are working on.
+
 ## Input
 
 There are parser classes for some basic types and an array. The "types"
@@ -84,7 +94,7 @@ produces typedefs that indicate what you expect and the matching C++ types.
 
 Since the type information is available in the C++ types that you intend to
 output, only thing to do is have a Write-function template for each type so
-that compiler can find a proper match. The generated type template is for
+that compiler can find the proper match. The generated type template is for
 convenience, in case you do not already have a class with output fields.
 
 The Write function generation requires that you tell how to check whether
@@ -95,16 +105,24 @@ is the expression and Value refers to the object that is being written.
 Likewise "Value.accessor" is used as parameter to Write where accessor is the
 given expression. If you use the template, then this is the member name.
 
-Integer types std::(u)intN_t where N is 8, 16, 32, or 64 cover the fundamental
+Integer types std::(u)intN_t where N is 8, 16, 32, or 64, cover the fundamental
 types that are used in typedefs in the cstdint header. Hence int most likely
-works but long might not. I am making the assumption that if you do not in
-particular care about the sizes, you use int and otherwise pick a type that
-has the needed number of bits.
+works but long might not. I am making the assumption that if you do not care
+about the sizes, you use int and otherwise explicitly pick a type that has the
+needed number of bits.
 
 ## Limitations
 
-Input is expected to be a JSON object. If you have an array or scalar, you have
-to provide the typedefs yourself.
+Input is expected to be a JSON object.
+
+If you have an array, you have to provide the typedefs for the classes
+yourself. A workable short-cut might be to specify an object with array value
+with desired elements and use parser and value classes for that array instead
+of the object.
+
+Scalars can be parsed by calling the appropriate parser class method directly.
+Although you can directly use the same standard functions that specificjson
+uses internally.
 
 # License
 

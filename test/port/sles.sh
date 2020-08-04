@@ -1,9 +1,6 @@
 #!/bin/sh
-
 set -eu
-
-sudo yum install -y -q cmake make clang
-sudo amazon-linux-extras install -y ruby2.6 >/dev/null
+sudo zypper install -y cmake make gcc-c++ ruby >/dev/null
 git clone --branch master --depth 1 https://github.com/onqtam/doctest.git dtroot
 mv dtroot/doctest .
 git clone --branch master --depth 1 https://github.com/ismo-karkkainen/edicta.git

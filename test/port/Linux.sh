@@ -14,4 +14,5 @@ if [ ! -x $1/test/port/$D ]; then
     cat /etc/os-release
     exit 1
 fi
+echo $D
 $1/test/port/$D "$1"

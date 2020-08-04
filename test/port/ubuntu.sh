@@ -1,6 +1,6 @@
 #!/bin/sh
 set -eu
-sudo apt-get install -y -q cmake build-essential ruby rake
+sudo apt-get install -y -q cmake build-essential ruby rake >/dev/null
 git clone --branch master --depth 1 https://github.com/onqtam/doctest.git dtroot
 mv dtroot/doctest .
 git clone --branch master --depth 1 https://github.com/ismo-karkkainen/edicta.git
