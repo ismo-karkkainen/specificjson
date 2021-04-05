@@ -54,7 +54,7 @@ Resulting specificjson is the script you can then install or copy where needed.
 Default values for fields and some other information are printed when you run
 the script using the `--document` argument.
 
-The pieces that are built in to the script or imported using a list file are
+The pieces that are built into the script or imported using a list file are
 the types that are available for use in format fields. You specify object
 fields and their contents using types in the specification passed via `--input`
 option. The script generates a header and source file with indicated contents.
@@ -68,15 +68,17 @@ not expecting will throw an exception. Once the parser object Finished-method
 returns true, you can Swap the value from parser to actual value object.
 
 For a writer of type "Foo", there will be a template class with indicated
-field names. You need to define NAMESPACE_TYPENAME_TYPE macro using the
-template "Foo_Template" and types as value for typedef. The generated Write
-template function for type "Foo" will then check for presence of field values
-as appropriate and it writes the field names and values to the Sink type,
-which is assumed to have a method "write" that takes a pointer and byte count.
-For example std::ostream works.
+field names. You need to define NAMESPACE_FOO_TYPE macro using the
+template "Foo_Template" and types for template paramaters as the value.
+The typedef Foo will then be available in NAMESPACE.
 
-For a practical example see https://github.com/ismo-karkkainen/imageio
-README.md file and sources.
+The generated Write template function for type "Foo" will check for the
+presence of field values as appropriate. It writes the field names and
+values to the Sink type, which is assumed to have a method "write" that
+takes a pointer and byte count. For example std::ostream works.
+
+For a practical example see https://github.com/ismo-karkkainen/fileio
+README.md file and readimage sources.
 
 If you want to provide your own parsers, you can export the existing ones,
 add your own, list the suitable ones and build a new script by calling the
@@ -126,6 +128,6 @@ uses internally.
 
 # License
 
-Copyright (C) 2020 Ismo Kärkkäinen
+Copyright © 2020 Ismo Kärkkäinen
 
 Licensed under Universal Permissive License. See License.txt.
