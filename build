@@ -1,6 +1,6 @@
 #!/usr/bin/env ruby
 
-# Copyright 2020 Ismo Kärkkäinen
+# Copyright © 2020-2021 Ismo Kärkkäinen
 # Licensed under Universal Permissive License. See License.txt.
 
 require 'optparse'
@@ -20,9 +20,9 @@ $IN = nil
 parser = OptionParser.new do |opts|
   opts.summary_indent = '  '
   opts.summary_width = 24
-  opts.banner = "Usage: build [options]"
-  opts.separator ""
-  opts.separator "Options (handled in presented order):"
+  opts.banner = 'Usage: build [options]'
+  opts.separator ''
+  opts.separator 'Options (handled in presented order):'
   opts.on('--clean', 'Ignore embedded information.') { $CLEAN = true }
   opts.on('--document', 'Print default values and information.') { $DOC = true }
   opts.on('--import FILELIST', 'Piece YAML file list as YAML array.') { |f| $RECIPE = f }
@@ -32,7 +32,7 @@ parser = OptionParser.new do |opts|
   opts.on('--build OUTPUT', 'Re-build to named script.') { |f| $BUILD = f }
   opts.on('-i', '--input FILENAME', 'Specifications to use.') { |f| $IN = f }
   opts.on('-h', '--help', 'Print this help and exit.') do
-    STDOUT.puts opts
+    $stdout.puts opts
     exit 0
   end
 end
@@ -52,7 +52,7 @@ $FILECONTENTS.each_pair do |key, value|
   $FILECONTENTS[key] = Base64.decode64(value)
 end
 
-$DEFAULT = %Q(---
+$DEFAULT = %(---
 piece:
   includes: [] # Lines or blocks of (conditional) includes inserted in header.
   source_includes: [] # As above but inserted in source file.
@@ -89,7 +89,12 @@ generate:
 
 puts($DEFAULT) if $DOC
 
-$DEFAULT = YAML.load($DEFAULT)
+$DEFAULT = YAML.safe_load($DEFAULT)
+
+def aargh(message, exit_code = nil)
+  $stderr.puts message
+  exit exit_code unless exit_code.nil?
+end
 
 def load_piece_file(piece, field, directory)
   filename = piece.fetch(field, nil)
@@ -105,17 +110,9 @@ def load_piece_file(piece, field, directory)
     content = IO.read(f)
     f.close
   rescue StandardError
-    STDERR.puts "Failed to open/read: #{filename}"
-    exit(3)
+    aargh("Failed to open/read: #{filename}", 3)
   end
-  stored = nil
-  keys = $FILECONTENTS.keys
-  for k in 0..keys.size
-    if $FILECONTENTS[keys[k]] == content
-      stored = keys[k]
-      break
-    end
-  end
+  stored = $FILECONTENTS.key(content)
   if stored.nil?
     stored = "c#{$FILECONTENTS.size}"
     $FILECONTENTS[stored] = content
@@ -125,8 +122,8 @@ end
 
 def defaults(kind, spec)
   $DEFAULT[kind].each_pair do |field, value|
-    if spec.has_key? field
-      if value.is_a?(Array) and not spec[field].is_a? Array
+    if spec.key? field
+      if value.is_a?(Array) && !spec[field].is_a?(Array)
         spec[field] = [ spec[field] ]
       end
     else
@@ -136,16 +133,14 @@ def defaults(kind, spec)
 end
 
 def default(spec, field, value)
-  spec[field] = value unless spec.has_key? field
+  spec[field] = value unless spec.key? field
 end
 
 def check_given(spec, kind, field, error)
-  return if spec[field] != $DEFAULT[kind][field]
-  STDERR.puts error
-  exit(4)
+  aargh(error, 4) unless spec[field] != $DEFAULT[kind][field]
 end
 
-def load_spec(filename, root=nil)
+def load_spec(filename, root = nil)
   begin
     unless root.nil?
       filename = File.realpath(filename, root)
@@ -155,28 +150,25 @@ def load_spec(filename, root=nil)
     input = IO.read(f)
     f.close
   rescue StandardError
-    STDERR.puts "Failed to find/read #{filename}"
-    exit(3)
+    aargh("Failed to find/read #{filename}", 3)
   end
   begin
     specs = JSON.parse(input)
   rescue StandardError
     begin
-      specs = YAML.load(input)
+      specs = YAML.safe_load(input)
     rescue StandardError
-      STDERR.puts "#{filename} neither JSON nor YAML."
-      exit(3)
+      aargh("#{filename} neither JSON nor YAML.", 3)
     end
   end
-  return specs
+  specs
 end
 
 unless $RECIPE.nil?
   recipe = load_spec($RECIPE)
   root = File.dirname(File.realpath($RECIPE))
   unless recipe.is_a? Array
-    STDERR.puts 'Recipe file must be a YAML array of file names.'
-    exit(2)
+    aargh('Recipe file must be a YAML array of file names.', 2)
   end
   recipe.each do |filename|
     piece = load_spec(filename, root)
@@ -186,18 +178,16 @@ unless $RECIPE.nil?
       load_piece_file(spec, 'source', d)
       load_piece_file(spec, 'license', d)
       defaults('piece', spec)
-      if spec['external'] and spec['writer']
-        spec['external'] = false
-      end
+      spec['external'] = false if spec['external'] && spec['writer']
       if spec['external']
         check_given(spec, 'piece', 'parsername', "#{filename} #{name} has no 'parsername'")
       end
       unless spec['pooled'].nil?
-        [ 'poolindexes', 'poolparsers', 'poolparsertypes' ].each do |field|
-          raise ArgumentError.new("#{name} has both pooled and #{field}") unless spec[field].nil?
+        %w[poolindexes poolparsers poolparsertypes].each do |field|
+          raise ArgumentError "#{name} has both pooled and #{field}" unless spec[field].nil?
         end
       end
-      puts("Replacing #{name}") if $PIECES.has_key? name
+      puts("Replacing #{name}") if $PIECES.key? name
       $PIECES[name] = spec
     end
   end
@@ -216,24 +206,24 @@ end
 missing = false
 $PIECES.each_pair do |name, spec|
   spec['requires'].each do |r|
-    unless $PIECES.has_key? r
-      STDERR.puts "#{name} missing requirement: #{r}"
+    unless $PIECES.key? r
+      aargh("#{name} missing requirement: #{r}")
       missing = true
     end
   end
 end
-exit(4) if missing and not $WARN
+exit(4) if missing && !$WARN
 
 if $EXPORT
   pieces = {}
   name2store = {}
   $PIECES.each_pair do |name, piece|
     piece = piece.clone
-    [ 'header', 'source', 'license' ].each do |field|
+    %w[header source license].each do |field|
       next if piece[field].nil?
       b = File.basename piece[field]
       s = piece["#{field}_stored"]
-      if name2store.has_key? b
+      if name2store.key? b
         name2store[b].push(s) unless name2store[b].include? s
       else
         name2store[b] = [ s ]
@@ -261,7 +251,7 @@ if $EXPORT
     idx = 0
     bn = b
     s.each do |c|
-      while name2store.has_key? bn
+      while name2store.key? bn
         idx += 1
         bn = "#{pre}_#{idx}#{ext}"
       end
@@ -274,14 +264,12 @@ if $EXPORT
   end
   list = []
   pieces.each_pair do |name, piece|
-    [ 'header', 'source', 'license' ].each do |field|
+    %w[header source license].each do |field|
       if piece[field].nil?
         piece.delete field
       else
         s = piece["#{field}_stored"]
-        if store2name.has_key? s
-          piece[field] = store2name[s]
-        end
+        piece[field] = store2name[s] if store2name.key? s
       end
       piece.delete "#{field}_stored"
     end
@@ -296,12 +284,11 @@ if $EXPORT
 end
 
 unless $BUILD.nil?
-  script = File.new($0, chomp: true).readlines
+  script = File.new($PROGRAM_NAME, chomp: true).readlines
   first = script.find_index { |ln| ln.start_with? '#PIECESASSIGNMENTSTART#' }
   last = script.find_index { |ln| ln.start_with? '#PIECESASSIGNMENTEND#' }
-  if first.nil? or last.nil? or last < first
-    STDERR.puts 'Failed to find lines starting with or in wrong order: #PIECESASSIGNMENTSTART# #PIECESASSIGNMENTEND#'
-    exit(2)
+  if first.nil? || last.nil? || last < first
+    aargh('Failed to find lines starting with, or in wrong order: #PIECESASSIGNMENTSTART# #PIECESASSIGNMENTEND#', 2)
   end
   succeeding = script.slice(last, script.size - last).join
   script = script.slice(0, first + 1).join
@@ -309,13 +296,13 @@ unless $BUILD.nil?
   $FILECONTENTS.each_pair do |key, value|
     encoded[key] = Base64.encode64(value)
   end
-  script.concat(%Q(
-$PIECES = YAML.load(%Q(#{YAML.dump($PIECES)}))
-$FILECONTENTS = YAML.load(%Q(#{YAML.dump(encoded)}))
+  script.concat(%(
+$PIECES = YAML.load(%(#{YAML.dump($PIECES)}))
+$FILECONTENTS = YAML.load(%(#{YAML.dump(encoded)}))
 ))
   script.concat(succeeding)
   IO.write($BUILD, script)
-  File.chmod(0755, $BUILD)
+  File.chmod(0o755, $BUILD)
 end
 
 exit(0) if $IN.nil?
@@ -328,11 +315,10 @@ def all_requirements(piece, reqs)
   unless reqs.include? piece['name']
     reqs.push piece['name']
     piece['requires'].each do |r|
-      next if reqs.include? r
-      all_requirements($PIECES[r], reqs)
+      all_requirements($PIECES[r], reqs) unless reqs.include? r
     end
   end
-  return reqs
+  reqs
 end
 
 $PIECES.each_value do |piece|
@@ -344,9 +330,9 @@ def parserpool_substitutions(needed, namespace)
   $pooled = []
   needed.each do |name|
     piece = $PIECES[name]
-    $pools.push(name) unless piece['poolindexes'].nil? and piece['poolparsers'].nil? and piece['poolparsertypes'].nil?
+    $pools.push(name) unless piece['poolindexes'].nil? && piece['poolparsers'].nil? && piece['poolparsertypes'].nil?
     $pooled.push(name) unless piece['pooled'].nil?
-    [ 'header', 'source' ].each do |field|
+    %w[header source].each do |field|
       fc = piece["#{field}_stored"]
       next if fc.nil?
       piece["#{field}_content"] = String.new($FILECONTENTS[fc])
@@ -375,7 +361,7 @@ def parserpool_substitutions(needed, namespace)
   poolvals.each_pair { |k, v| poolvals[k] = v.join(', ') }
   $pools.each do |name|
     piece = $PIECES[name]
-    [ 'header', 'source' ].each do |field|
+    %w[header source].each do |field|
       fc = piece["#{field}_stored"]
       next if fc.nil?
       poolvals.each_pair do |fld, value|
@@ -388,8 +374,7 @@ def parserpool_substitutions(needed, namespace)
   $pooled.each do |name|
     piece = $PIECES[name]
     piece['all_requires'].each do |p|
-      next if p == name
-      $pooledreqs.push p
+      $pooledreqs.push p unless p == name
     end
   end
   $pooledreqs.uniq!
@@ -399,10 +384,10 @@ def licenses(needed)
   lic2id = { }
   needed.each do |name|
     lic = $PIECES[name]['license_stored']
-    next if lic.nil? or lic2id.has_key? lic
+    next if lic.nil? || lic2id.key?(lic)
     lic2id[lic] = "License #{lic2id.size + 1}"
   end
-  return lic2id
+  lic2id
 end
 
 def compare_pieces(a, b)
@@ -421,7 +406,7 @@ def compare_pieces(a, b)
     return 1
   end
   return -1 if breqs.include? a['name']
-  if a['writer'] and b['writer']
+  if a['writer'] && b['writer']
     if a['scalar']
       return -1 unless b['scalar']
     else
@@ -445,19 +430,19 @@ def compare_pieces(a, b)
     return 1 if $pools.include? b['name']
   end
   return areqs.length <=> breqs.length unless areqs.length == breqs.length
-  return a['name'] <=> b['name']
+  a['name'] <=> b['name']
 end
 
 def arrange_needed(needed)
   pools = needed.select { |name| $pools.include? name }
-  others = needed.select { |name| not(pools.include?(name)) }
+  others = needed.reject { |name| pools.include?(name) }
   others.sort! { |a, b| compare_pieces(a, b) }
   last = others.rindex { |name| $pooled.include? name }
   needed = others.slice!(0, last + 1)
   others.concat pools
   others.sort! { |a, b| compare_pieces(a, b) }
   needed.concat others
-  return needed
+  needed
 end
 
 def unique_in_order(piece_names, field)
@@ -473,13 +458,13 @@ def unique_in_order(piece_names, field)
       end
     end
   end
-  return values
+  values
 end
 
 def license_block(lic2id)
   blocks = []
   lic2id.each_pair do |lic, id|
-    blocks.push %Q(
+    blocks.push %(
 #if 0
 /*
 #{id}:
@@ -489,18 +474,18 @@ def license_block(lic2id)
 #endif
 )
   end
-  return blocks.join("\n")
+  blocks.join("\n")
 end
 
 def make_header(spec, piece_names, generated, lic2id)
   h = File.new(spec['header'], 'w')
-  h.puts %Q(// Auto-generated file. Do not edit.
+  h.puts %(// Auto-generated file. Do not edit.
 #if !defined(#{spec['header'].upcase.sub('.', '_')})
 #define #{spec['header'].upcase.sub('.', '_')}
 
 #{license_block(lic2id)}
 )
-  h.puts %Q(
+  h.puts %(
 #{unique_in_order(piece_names, 'includes').join("\n")}
 
 namespace #{spec['namespace']} {
@@ -542,7 +527,7 @@ end
 
 def make_source(spec, piece_names, generated, lic2id, header_name)
   h = File.new(spec['source'], 'w')
-  h.puts %Q(// Auto-generated file. Do not edit.
+  h.puts %(// Auto-generated file. Do not edit.
 #{license_block(lic2id)}
 
 #define INCLUDED_FROM_GENERATED_SOURCE 1
@@ -567,7 +552,7 @@ using namespace #{spec['namespace']};
     h.puts(piece['source_content'])
   end
   generated.each_pair do |typename, object|
-    h.puts %Q(
+    h.puts %(
 // #{typename}
 #{object[:extern_src].join("\n")}
 )
@@ -582,14 +567,13 @@ specs.each_pair do |name, spec|
   spec['header'] = "#{spec['name']}.#{spec['header_extension']}" if spec['header'].nil?
   spec['source'] = "#{spec['name']}.#{spec['source_extension']}" if spec['source'].nil?
   spec['generate'].each_pair do |typename, gen|
-    unless spec['types'].has_key? typename
-      STDERR.puts "#{name} generate #{typename} has no match in types: #{spec['types'].keys.sort.join(' ')}"
-      exit(4)
+    unless spec['types'].key? typename
+      aargh("#{name} generate #{typename} has no match in types: #{spec['types'].keys.sort.join(' ')}", 4)
     end
     defaults('generate', gen)
   end
   spec['types'].each_pair do |typename, object|
-    unless spec['generate'].has_key? typename
+    unless spec['generate'].key? typename
       puts "#{name} #{typename} deleted since it has no match in generate: #{spec['generate'].keys.sort.join(' ')}"
       spec['types'].delete typename
       next
@@ -603,7 +587,7 @@ specs.each_pair do |name, spec|
         reqs.concat desc['format']
       end
       gen = spec['generate'][typename]
-      if gen['writer'] and not gen['parser'] # Parser sets defaults later.
+      if gen['writer'] && !gen['parser'] # Parser sets defaults later.
         unless desc['required']
           check_given(desc, 'types', 'checker', "#{name} #{typename} #{field} has no 'checker'.")
         end
@@ -618,24 +602,21 @@ specs.each_pair do |name, spec|
       next unless spec['generate'][typename]['parser']
       desc['format'].each do |f|
         unless f.is_a? String
-          STDERR.puts "#{name} #{typename} #{field} format not string."
-          exit(4)
+          aargh("#{name} #{typename} #{field} format not string.", 4)
         end
-        if $PIECES.has_key? f
+        if $PIECES.key? f
           object[:requires].push f
           next if $PIECES[f]['external']
-          STDERR.puts "#{name} #{typename} #{field} format #{f} internal."
-          exit(4)
+          aargh("#{name} #{typename} #{field} format #{f} internal.", 4)
         end
-        if spec['generate'].has_key? f
+        if spec['generate'].key? f
           next if spec['generate'][f]['parser']
-          STDERR.puts "#{name} #{typename} #{field} format #{f} no parser."
-          exit(4)
+          aargh("#{name} #{typename} #{field} format #{f} no parser.", 4)
         end
-        if spec['types'].has_key? f
-          STDERR.puts "#{name} #{typename} #{field} format #{f} not generated."
+        if spec['types'].key? f
+          aargh("#{name} #{typename} #{field} format #{f} not generated.")
         else
-          STDERR.puts "#{name} #{typename} #{field} format #{f} not found: #{spec['types'].keys.sort.join(' ')}"
+          aargh("#{name} #{typename} #{field} format #{f} not found: #{spec['types'].keys.sort.join(' ')}")
         end
         exit(4)
       end
@@ -648,18 +629,18 @@ def classify_expression(expr)
   # add space in any place where it does not affect the meaning.
   return :expression if expr.nil? # Will go unused in this case.
   return :expression if expr.include? ' '
-  return :expression if expr.include?('.') or expr.include?('->')
+  return :expression if expr.include?('.') || expr.include?('->')
   return :method if expr.end_with? '()'
-  return :member
+  :member
 end
 
 def write_function(spec, typename)
   object = spec['types'][typename]
   all_req = true
-  object.each_pair do |field, desc|
+  object.each_value do |desc|
     all_req = false unless desc['required']
   end
-  lines = [ %Q(
+  lines = [ %(
 #if !defined(INCLUDED_FROM_GENERATED_SOURCE)
 template<typename Sink>
 void Write(Sink& S, const #{typename}& Value, std::vector<char>& Buffer) {
@@ -667,7 +648,6 @@ void Write(Sink& S, const #{typename}& Value, std::vector<char>& Buffer) {
     S.write(&c, 1);) ]
   lines.push('    bool separated = true;') unless all_req
   prev_req = nil
-  names = []
   fields = object.keys
   # If write order is ever something other than the key one, change it here.
   fields.each do |field|
@@ -677,11 +657,11 @@ void Write(Sink& S, const #{typename}& Value, std::vector<char>& Buffer) {
       lines.push "    if (Value.#{desc['checker']}) {"
       fill = '    '
     end
-    if not prev_req.nil?
-      if all_req or prev_req
+    unless prev_req.nil?
+      if all_req || prev_req
         lines.push "#{fill}    c = ',';"
         lines.push "#{fill}    S.write(&c, 1);"
-      elsif not prev_req.nil?
+      elsif !prev_req.nil?
         lines.push "#{fill}    if (!separated) {"
         lines.push "#{fill}        c = ',';"
         lines.push "#{fill}        S.write(&c, 1);"
@@ -692,23 +672,23 @@ void Write(Sink& S, const #{typename}& Value, std::vector<char>& Buffer) {
     lines.push "#{fill}    c = ':';"
     lines.push "#{fill}    S.write(&c, 1);"
     lines.push "#{fill}    Write(S, Value.#{desc['accessor']}, Buffer);"
-    lines.push("#{fill}    separated = false;") unless all_req or field == fields.last
+    lines.push("#{fill}    separated = false;") unless all_req || field == fields.last
     lines.push('    }') unless desc['required']
     prev_req = desc['required']
   end
-  lines.push %Q(    c = '}';
+  lines.push %(    c = '}';
     S.write(&c, 1);
 }
 #endif // INCLUDED_FROM_GENERATED_SOURCE
 )
-  return lines.join("\n")
+  lines.join("\n")
 end
 
 specs.each_pair do |name, spec|
   needed = []
   needed.concat spec['requires']
-  spec['generate'].each_pair do |typename, gen|
-    next unless spec['types'][typename].has_key? :requires
+  spec['generate'].each_key do |typename|
+    next unless spec['types'][typename].key? :requires
     needed.concat spec['types'][typename][:requires]
     needed.push 'ParseObject'
     spec['types'][typename].delete :requires
@@ -739,7 +719,7 @@ specs.each_pair do |name, spec|
       end
       needed.concat reqs
     end
-    spec['generate'].each_pair do |typename, gen|
+    spec['generate'].each_value do |gen|
       needed.push('String') if gen['parser']
     end
     needed.uniq!
@@ -751,11 +731,11 @@ specs.each_pair do |name, spec|
   spec['generate'].each_pair do |typename, gen|
     object = spec['types'][typename]
     out = {
-      :forward => [],
-      :typedef => [],
-      :extern => [],
-      :extern_src => [],
-      :class => []
+      forward: [],
+      typedef: [],
+      extern: [],
+      extern_src: [],
+      class: []
     }
     if gen['parser']
       out[:forward].push "class #{typename};"
@@ -767,18 +747,17 @@ specs.each_pair do |name, spec|
         # Field name string constant.
         out[:extern].push "extern const char #{sub}[];"
         out[:extern_src].push "const char #{spec['namespace']}::#{sub}[] = \"#{field}\";"
-        prev = nil
         k = desc['format'].size - 1
         f = desc['format'][k]
         p = $PIECES[f]
-        out[:typedef].push "typedef #{p['parsername']} #{sub}_#{k.to_s};"
-        while k > 0
+        out[:typedef].push "typedef #{p['parsername']} #{sub}_#{k};"
+        while k.positive?
           k -= 1
           f = desc['format'][k]
           p = $PIECES[f]
-          out[:typedef].push "typedef #{p['parsername']}<#{sub}_#{(k + 1).to_s}> #{sub}_#{k.to_s};"
+          out[:typedef].push "typedef #{p['parsername']}<#{sub}_#{k + 1}> #{sub}_#{k};"
         end
-        keyvalues.push "#{desc['required'] ? 'Required' : ''}Key#{(desc['format'].size > 1) ? 'Container' : ''}Value<#{sub},#{sub}_0>"
+        keyvalues.push "#{desc['required'] ? 'Required' : ''}Key#{desc['format'].size > 1 ? 'Container' : ''}Value<#{sub},#{sub}_0>"
         out[:typedef].push "typedef #{keyvalues.last} #{sub}_KeyValue;"
         values.push "Value<#{sub}_0>"
         names.push field
@@ -790,22 +769,19 @@ specs.each_pair do |name, spec|
       out[:typedef].push "typedef KeyValues<#{keyvalues.join(',')}> #{typename}_KeyValues;"
       out[:typedef].push "typedef NamelessValues<#{values.join(',')}> #{typename}_NamelessValues;"
       out[:typedef].push "typedef ParseObject<#{typename}_KeyValues,#{typename}_NamelessValues> #{typename}_Parser; // Parse with an instance of this."
-      out[:class].push %Q(
+      out[:class].push %(
 class #{typename} {
 public:
-#{(names.map { |n| "    typedef #{values[names.find_index(n)]}::Type #{n}Type;"}
-).join("\n")}
+#{(names.map { |n| "    typedef #{values[names.find_index(n)]}::Type #{n}Type;" }).join("\n")}
     #{typename}_Parser::Type values;
 
-#{(names.map { |n| "    bool #{n}Given() const { return std::get<#{names.find_index(n)}>(values).Given(); }"}).join("\n")}
+#{(names.map { |n| "    bool #{n}Given() const { return std::get<#{names.find_index(n)}>(values).Given(); }" }).join("\n")}
 
-#{(names.map { |n| "    #{n}Type& #{n}() { return std::get<#{names.find_index(n)}>(values).value; }"}).join("\n")}
-#{(names.map { |n| "    const #{n}Type& #{n}() const { return std::get<#{names.find_index(n)}>(values).value; }"}).join("\n")}
+#{(names.map { |n| "    #{n}Type& #{n}() { return std::get<#{names.find_index(n)}>(values).value; }" }).join("\n")}
+#{(names.map { |n| "    const #{n}Type& #{n}() const { return std::get<#{names.find_index(n)}>(values).value; }" }).join("\n")}
 };
 )
-      if gen['writer']
-        out[:class].push write_function(spec, typename)
-      end
+      out[:class].push write_function(spec, typename) if gen['writer']
       generated[typename] = out
     elsif gen['writer']
       object.each_pair do |field, desc|
@@ -819,8 +795,8 @@ public:
       # Template class for write.
       get_ind = object.keys.select { |k| object[k][:access_type] == :method }
       get_dir = object.keys.select { |k| object[k][:access_type] != :method }
-      chk_ind = object.keys.select { |k| object[k][:check_type] == :method and not object[k][:required] }
-      tmpl = [ %Q(
+      chk_ind = object.keys.select { |k| object[k][:check_type] == :method && !object[k][:required] }
+      tmpl = [ %(
 template<#{(object.keys.map { |k| "typename #{object[k][:tn]}" }).join(',')}>
 class #{typename}_Template {
 private:
@@ -832,7 +808,7 @@ public:) ]
       unless chk_ind.empty? # Constructor to set given indicators to false.
         tmpl.push "    #{typename}_Template() : #{(chk_ind.map { |f| "#{f}_given(false)" }).join(', ')} { }"
       end
-      tmpl.push(%Q(
+      tmpl.push(%(
 #{(chk_ind.map { |f| "    bool& #{object[f][:checker]} { return #{f}_given; }" }).join("\n")}
 #{(chk_ind.map { |f| "    bool #{object[f][:checker]} const { return #{f}_given; }" }).join("\n")}
 
@@ -847,11 +823,11 @@ public:) ]
       end
       tmpl.sub!("private:\n\n", "private:\n")
       tmpl.sub!("public:\n\n", "public:\n")
-      tmpl.sub!("private:\npublic:", "public:") # Drop private if not used.
+      tmpl.sub!("private:\npublic:", 'public:') # Drop private if not used.
       tmpl.sub!("\n\n};", "\n};")
       out[:class].push tmpl
       # define check and typedef for template.
-      out[:class].push %Q(
+      out[:class].push %(
 #if defined(#{spec['namespace'].upcase}_#{typename.upcase}_TYPE)
 typedef #{spec['namespace'].upcase}_#{typename.upcase}_TYPE #{typename};
 #endif
