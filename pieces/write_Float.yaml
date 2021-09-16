@@ -5,7 +5,7 @@ writeFloat:
     void Write(Sink& S, float Value, std::vector<char>& Buffer);
   header: write_Float.hpp
   source: write_Float.cpp
-  license: ../License.txt
+  license: ../LICENSE.txt
   requires:
   - Exception
   - writeScalarType

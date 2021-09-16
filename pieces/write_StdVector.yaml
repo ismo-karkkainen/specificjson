@@ -5,7 +5,7 @@ writeStdVector:
     template<typename Sink, typename T>
     void Write(Sink& S, const std::vector<T>& Value, std::vector<char>& Buffer);
   header: write_StdVector.hpp
-  license: ../License.txt
+  license: ../LICENSE.txt
   requires:
   - writeForwardIterator
   - writePointer

@@ -5,7 +5,7 @@ writeInt16:
     void Write(Sink& S, std::int16_t Value, std::vector<char>& Buffer);
   header: write_Int16.hpp
   source: write_Int16.cpp
-  license: ../License.txt
+  license: ../LICENSE.txt
   requires: writeScalarType
   includes:
   - "#include <cstdint>"

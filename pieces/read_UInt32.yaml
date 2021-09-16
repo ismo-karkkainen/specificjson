@@ -5,7 +5,7 @@ UInt32:
   pooled: PoolIndex
   header: read_UInt32.hpp
   source: read_UInt32.cpp
-  license: ../License.txt
+  license: ../LICENSE.txt
   requires:
   - ValueParser
   - ParseInteger

@@ -5,7 +5,7 @@ writeInt32:
     void Write(Sink& S, std::int32_t Value, std::vector<char>& Buffer);
   header: write_Int32.hpp
   source: write_Int32.cpp
-  license: ../License.txt
+  license: ../LICENSE.txt
   requires: writeScalarType
   includes:
   - "#include <cstdint>"

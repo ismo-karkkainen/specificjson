@@ -5,7 +5,7 @@ Float:
   pooled: PoolIndex
   header: read_Float.hpp
   source: read_Float.cpp
-  license: ../License.txt
+  license: ../LICENSE.txt
   requires:
     - ValueParser
     - Exception

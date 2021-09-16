@@ -5,7 +5,7 @@ writeUInt8:
     void Write(Sink& S, std::uint8_t Value, std::vector<char>& Buffer);
   header: write_UInt8.hpp
   source: write_UInt8.cpp
-  license: ../License.txt
+  license: ../LICENSE.txt
   requires: writeScalarType
   includes:
   - "#include <cstdint>"

@@ -3,7 +3,7 @@ ParseObject:
   description: Parses an object into an instance.
   header: ParseObject.hpp
   source: ParseObject.cpp
-  license: ../License.txt
+  license: ../LICENSE.txt
   requires:
     - ValueParser
     - Exception

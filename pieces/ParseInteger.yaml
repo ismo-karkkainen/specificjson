@@ -5,7 +5,7 @@ ParseInteger:
     const char* parse_integer(T& Out, const char* Begin, const char* End, std::vector<char>& Buffer, bool Finished) noexcept(false);
   header: ParseInteger.hpp
   source: ParseInteger.cpp
-  license: ../License.txt
+  license: ../LICENSE.txt
   requires:
   - Exception
   includes:

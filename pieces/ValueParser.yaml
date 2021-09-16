@@ -3,6 +3,6 @@ ValueParser:
   external: false
   header: ValueParser.hpp
   source: ValueParser.cpp
-  license: ../License.txt
+  license: ../LICENSE.txt
   requires:
     - ParserPool

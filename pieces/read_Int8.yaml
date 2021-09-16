@@ -5,7 +5,7 @@ Int8:
   pooled: PoolIndex
   header: read_Int8.hpp
   source: read_Int8.cpp
-  license: ../License.txt
+  license: ../LICENSE.txt
   requires:
   - ValueParser
   - ParseInteger

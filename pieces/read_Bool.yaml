@@ -5,7 +5,7 @@ Bool:
   pooled: PoolIndex
   header: read_Bool.hpp
   source: read_Bool.cpp
-  license: ../License.txt
+  license: ../LICENSE.txt
   requires:
     - ValueParser
     - Exception

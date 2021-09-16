@@ -5,7 +5,7 @@ writeInt64:
     void Write(Sink& S, std::int64_t Value, std::vector<char>& Buffer);
   header: write_Int64.hpp
   source: write_Int64.cpp
-  license: ../License.txt
+  license: ../LICENSE.txt
   requires: writeScalarType
   includes:
   - "#include <cstdint>"

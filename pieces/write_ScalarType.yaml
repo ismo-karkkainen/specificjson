@@ -5,7 +5,7 @@ writeScalarType:
     void WriteScalarType(Sink& S, T Value, std::vector<char>& Buffer);
   header: write_ScalarType.hpp
   source: write_ScalarType.cpp
-  license: ../License.txt
+  license: ../LICENSE.txt
   includes:
   - "#include <cstdio>"
   - "#include <vector>"

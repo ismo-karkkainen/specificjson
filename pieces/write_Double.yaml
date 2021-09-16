@@ -5,7 +5,7 @@ writeDouble:
     void Write(Sink& S, double Value, std::vector<char>& Buffer);
   header: write_Double.hpp
   source: write_Double.cpp
-  license: ../License.txt
+  license: ../LICENSE.txt
   requires:
   - Exception
   - writeScalarType

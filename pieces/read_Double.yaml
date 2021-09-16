@@ -5,7 +5,7 @@ Double:
   pooled: PoolIndex
   header: read_Double.hpp
   source: read_Double.cpp
-  license: ../License.txt
+  license: ../LICENSE.txt
   requires:
     - ValueParser
     - Exception

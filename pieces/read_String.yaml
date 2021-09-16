@@ -5,7 +5,7 @@ String:
   pooled: PoolIndex
   header: read_String.hpp
   source: read_String.cpp
-  license: ../License.txt
+  license: ../LICENSE.txt
   requires:
     - ValueParser
     - Exception

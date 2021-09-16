@@ -4,7 +4,7 @@ ContainerStdVectorEqSize:
     are the same.
   parsername: ParseContainerStdVectorEqSize
   header: read_ContainerStdVectorEqSize.hpp
-  license: ../License.txt
+  license: ../LICENSE.txt
   requires:
     - ParseArrayContainer
   includes:

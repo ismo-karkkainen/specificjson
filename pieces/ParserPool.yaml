@@ -8,4 +8,4 @@ ParserPool:
   poolindexes: PoolIndexes
   poolparsers: PoolParsers
   poolparsertypes: PoolParserTypes
-  license: ../License.txt
+  license: ../LICENSE.txt

@@ -6,5 +6,5 @@ writeForwardIterator:
     void Write(Sink& S, ForwardIterator& Begin, ForwardIterator& End, std::vector<char>& Buffer);
   header: write_ForwardIterator.hpp
   requires: writePointer
-  license: ../License.txt
+  license: ../LICENSE.txt
   includes: "#include <vector>"

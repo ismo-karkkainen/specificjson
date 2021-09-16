@@ -5,7 +5,7 @@ writeString:
     void Write(Sink& S, const char* Begin, const char* End, std::vector<char>& Buffer);
   header: write_String.hpp
   source: write_String.cpp
-  license: ../License.txt
+  license: ../LICENSE.txt
   requires: Exception
   includes:
   - "#include <string>"

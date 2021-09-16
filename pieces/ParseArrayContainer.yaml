@@ -3,7 +3,7 @@ ParseArrayContainer:
   description: Parses an array into a container.
   header: ParseArrayContainer.hpp
   source: ParseArrayContainer.cpp
-  license: ../License.txt
+  license: ../LICENSE.txt
   requires:
     - ValueParser
     - Exception

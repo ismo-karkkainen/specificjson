@@ -2,7 +2,7 @@ StdVector:
   description: Parses an array of scalars into std::vector.
   parsername: ParseStdVector
   header: read_StdVector.hpp
-  license: ../License.txt
+  license: ../LICENSE.txt
   requires:
     - ParseArrayContainer
   includes:

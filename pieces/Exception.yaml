@@ -6,6 +6,6 @@ Exception:
   external: false
   header: Exception.hpp
   source: Exception.cpp
-  license: ../License.txt
+  license: ../LICENSE.txt
   includes: "#include <exception>"
   source_includes: "#include <cstring>"
