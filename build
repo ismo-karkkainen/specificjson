@@ -1,7 +1,7 @@
 #!/usr/bin/env ruby
 
 # Copyright © 2020-2021 Ismo Kärkkäinen
-# Licensed under Universal Permissive License. See License.txt.
+# Licensed under Universal Permissive License. See LICENSE.txt.
 
 require 'optparse'
 require 'yaml'

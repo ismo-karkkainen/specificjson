@@ -19,7 +19,7 @@ re-run with clean, import, and build options to produce a new script. If you
 are ok with the provided pieces, you probably want just to import your own
 parsers and writers.
 
-## Build with cmake
+## Build tests with cmake
 
 You need cmake and compiler for C++17. Assuming a build directory parallel to
 main datalackey directory, you can use:
@@ -35,19 +35,26 @@ To specify the compiler, set for example:
     CXX=clang++
     CXX=g++
 
-To build, test, and install the script, assuming Unix Makefiles:
+To build and test, assuming Unix Makefiles:
 
     make -j 2
     make test
-    sudo make install
 
-## Build without cmake
+Note that if you do not want to build gem but copy the script elsewhere, the
+test target has built the specificjson script into the build directory.
 
-If you are ok with not running tests, run:
+## Build gem without tests
 
-    ./build --import build.yaml --build specificjson
+If you are ok with not running tests, run in the source code directory:
 
-Resulting specificjson is the script you can then install or copy where needed.
+    rake gem
+    rake install
+
+The original intended usage was that the script gets built with changes
+that are needed in a project, under the assumption that no single version
+will cover the needs of everyone. Using the gem basically makes the base
+version easier to install. You might want to put your own sources into a
+repository and install this gem to generate your own version.
 
 # Usage
 
@@ -128,6 +135,6 @@ uses internally.
 
 # License
 
-Copyright © 2020 Ismo Kärkkäinen
+Copyright © 2020, 2021 Ismo Kärkkäinen
 
-Licensed under Universal Permissive License. See License.txt.
+Licensed under Universal Permissive License. See LICENSE.txt.
