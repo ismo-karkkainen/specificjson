@@ -5,9 +5,8 @@ writing JSON from expected input description in YAML.
 
 # Requirements
 
-For unit tests, you need https://github.com/onqtam/doctest to compile them.
-Install somewhere where `#include <doctest/doctest.h>` works. See test/port
-scripts for one option.
+For unit tests, https://github.com/onqtam/doctest has been included via
+git subtree with prefix doctest.
 
 # Building the script
 

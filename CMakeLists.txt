@@ -48,6 +48,7 @@ add_custom_command(OUTPUT specificjsontest.hpp specificjsontest.cpp
 
 add_executable(unittest test/unittest.cpp ${CMAKE_CURRENT_BINARY_DIR}/specificjsontest.cpp)
 target_include_directories(unittest SYSTEM PRIVATE /usr/local/include)
+target_include_directories(unittest PRIVATE doctest)
 target_include_directories(unittest SYSTEM PRIVATE ${CMAKE_CURRENT_BINARY_DIR})
 target_compile_options(unittest PRIVATE ${CxxStd})
 target_compile_options(unittest PRIVATE ${BuildOptions})

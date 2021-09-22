@@ -6,7 +6,7 @@
 // Licensed under Universal Permissive License. See License.txt.
 
 #define DOCTEST_CONFIG_IMPLEMENT_WITH_MAIN
-#include <doctest/doctest.h>
+#include "doctest/doctest.h"
 #include "specificjsontest.hpp"
 #include <sstream>
 #include <cstdint>

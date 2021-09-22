@@ -6,10 +6,6 @@ clone () {
     git clone --branch master --depth 1 $1 >/dev/null
 }
 
-clone https://github.com/onqtam/doctest.git
-mv doctest dtroot
-mv dtroot/doctest .
-rm -rf dtroot
 clone https://github.com/ismo-karkkainen/edicta.git
 cd edicta
 sudo rake install >/dev/null
