@@ -15,6 +15,6 @@ Licensed under Universal Permissive License, see LICENSE.txt.
   s.email       = 'ismokarkkainen@icloud.com'
   s.files       = [ 'LICENSE.txt' ]
   s.executables << 'specificjson'
-  s.homepage    = 'http://rubygems.org/gems/specificjson'
+  s.homepage    = 'http://xn--ismo-krkkinen-gfbd.fi/specificjson/index.html'
   s.license     = 'UPL-1.0'
 end
