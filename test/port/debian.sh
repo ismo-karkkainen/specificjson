@@ -1,5 +1,0 @@
-#!/bin/sh
-
-set -eu
-sudo apt-get install -y -q cmake make clang ruby rake >/dev/null
-$1/test/port/clang-build.sh $1
