@@ -32,7 +32,8 @@ do
     export X
     mkdir testbuild
     (
-        echo "Build $(cat _logs/commit.txt) on $D using $X at $(date '+%Y-%m-%d %H:%M')"
+        echo "Built on $D using $X at $(date '+%Y-%m-%d %H:%M')"
+        cat _logs/info.txt
         echo "$C"
         (
             set -eu
