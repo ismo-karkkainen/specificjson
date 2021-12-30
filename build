@@ -156,7 +156,7 @@ def load_spec(filename, root = nil)
     specs = JSON.parse(input)
   rescue StandardError
     begin
-      specs = YAML.safe_load(input)
+      specs = YAML.safe_load(input, aliases: true)
     rescue StandardError
       aargh("#{filename} neither JSON nor YAML.", 3)
     end
@@ -297,8 +297,8 @@ unless $BUILD.nil?
     encoded[key] = Base64.encode64(value)
   end
   script.concat(%(
-$PIECES = YAML.load(%(#{YAML.dump($PIECES)}))
-$FILECONTENTS = YAML.load(%(#{YAML.dump(encoded)}))
+$PIECES = YAML.safe_load(%(#{YAML.dump($PIECES)}), aliases: true)
+$FILECONTENTS = YAML.safe_load(%(#{YAML.dump(encoded)}), aliases: true)
 ))
   script.concat(succeeding)
   IO.write($BUILD, script)
