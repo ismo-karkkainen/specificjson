@@ -134,6 +134,6 @@ uses internally.
 
 # License
 
-Copyright © 2020, 2021 Ismo Kärkkäinen
+Copyright © 2020-2022 Ismo Kärkkäinen
 
 Licensed under Universal Permissive License. See LICENSE.txt.

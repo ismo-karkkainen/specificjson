@@ -1,5 +1,7 @@
 # frozen_string_literal: true
 
+require 'rubocop/rake_task'
+
 task default: [:install]
 
 desc 'Clean.'
@@ -18,3 +20,7 @@ task install: [:gem] do
   `gem install specificjson-*.gem`
 end
 
+desc 'Lint using Rubocop'
+RuboCop::RakeTask.new(:lint) do |t|
+  t.patterns = [ 'build', 'specificjson.gemspec' ]
+end

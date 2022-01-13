@@ -1,6 +1,7 @@
 #!/usr/bin/env ruby
+# frozen_string_literal: false
 
-# Copyright © 2020-2021 Ismo Kärkkäinen
+# Copyright © 2020-2022 Ismo Kärkkäinen
 # Licensed under Universal Permissive License. See LICENSE.txt.
 
 require 'optparse'
@@ -336,7 +337,7 @@ def parserpool_substitutions(needed, namespace)
       fc = piece["#{field}_stored"]
       next if fc.nil?
       piece["#{field}_content"] = String.new($FILECONTENTS[fc])
-      next if 'specjson' == namespace
+      next if namespace == 'specjson'
       until piece["#{field}_content"].sub!('specjson::', "#{namespace}::").nil?
       end
     end
@@ -351,7 +352,7 @@ def parserpool_substitutions(needed, namespace)
     poolvals['poolindexes'].push $pooled[k]
     poolvals['poolparsers'].push piece['parsername']
     poolvals['poolparsertypes'].push "#{piece['parsername']}::Type"
-    [ 'header', 'source' ].each do |field|
+    %w[header source].each do |field|
       fc = piece["#{field}_stored"]
       next if fc.nil?
       until piece["#{field}_content"].sub!(piece['pooled'], k.to_s).nil?
@@ -381,7 +382,7 @@ def parserpool_substitutions(needed, namespace)
 end
 
 def licenses(needed)
-  lic2id = { }
+  lic2id = {}
   needed.each do |name|
     lic = $PIECES[name]['license_stored']
     next if lic.nil? || lic2id.key?(lic)
@@ -522,7 +523,7 @@ namespace #{spec['namespace']} {
 
 #endif)
   h.close
-  return spec['header']
+  spec['header']
 end
 
 def make_source(spec, piece_names, generated, lic2id, header_name)
@@ -558,7 +559,7 @@ using namespace #{spec['namespace']};
 )
   end
   h.close
-  return spec['source']
+  spec['source']
 end
 
 specs.each_pair do |name, spec|
@@ -709,7 +710,7 @@ specs.each_pair do |name, spec|
       reqs = []
       needed.each { |typename| reqs.concat $PIECES[typename]['requires'] }
       reqs.uniq!
-      while true
+      loop do
         s = reqs.size
         added = []
         reqs.each { |typename| added.concat $PIECES[typename]['requires'] }
@@ -727,7 +728,7 @@ specs.each_pair do |name, spec|
   parserpool_substitutions(needed, spec['namespace'])
   needed = arrange_needed(needed)
   lic2id = licenses(needed)
-  generated = { }
+  generated = {}
   spec['generate'].each_pair do |typename, gen|
     object = spec['types'][typename]
     out = {
@@ -819,7 +820,7 @@ public:) ]
 };))
       tmpl = tmpl.join("\n")
       # Tweak the looks of output.
-      until (tmpl.sub!("\n\n\n", "\n\n")).nil? # Shrink two empty lines to 1.
+      until tmpl.sub!("\n\n\n", "\n\n").nil? # Shrink two empty lines to 1.
       end
       tmpl.sub!("private:\n\n", "private:\n")
       tmpl.sub!("public:\n\n", "public:\n")
